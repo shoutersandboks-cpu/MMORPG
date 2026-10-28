@@ -3,83 +3,81 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Loot & Shooter 3D v4</title>
+<title>Loot & Shooter 3D v5 - MMO</title>
 <style>
-  html,body{margin:0;height:100%;overflow:hidden;background:#87CEEB;font-family:system-ui,sans-serif;color:#fff;user-select:none;-webkit-user-select:none;touch-action:none}
-  canvas{display:block}
-  #hud{position:fixed;top:12px;left:12px;font-size:15px;line-height:1.5;text-shadow:0 2px 4px #000;pointer-events:none;background:rgba(0,0,0,.5);padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.15);z-index:5}
-  #hud b{color:#7CFC00}
-  #hud .gold{color:#ffcc00}
-  #hud .hpbar{width:160px;height:9px;background:#333;border-radius:4px;overflow:hidden;margin:4px 0}
-  #hud .hpfill{height:100%;background:linear-gradient(90deg,#e74c3c,#f39c12,#2ecc71);transition:width .15s}
-  #hud .weapon{color:#ffcc00;font-weight:bold}
-  #wselector{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:5;pointer-events:none}
-  .wslot{padding:8px 14px;border-radius:8px;background:rgba(0,0,0,.6);border:2px solid rgba(255,255,255,.2);font-size:13px;font-weight:bold;color:#aaa;transition:.15s;min-width:80px;text-align:center}
-  .wslot.active{border-color:#ffcc00;color:#ffcc00;background:rgba(255,204,0,.15);box-shadow:0 0 12px rgba(255,204,0,.4)}
-  .wslot.empty{opacity:.35}
-  .wslot .kbd{display:inline-block;background:#333;padding:1px 6px;border-radius:3px;margin-right:4px;color:#ffcc00;font-size:11px}
-  #bossbar{position:fixed;top:12px;left:50%;transform:translateX(-50%);width:50%;max-width:640px;pointer-events:none;display:none;z-index:5}
-  #bossbar .frame{background:rgba(0,0,0,.85);padding:6px 8px;border-radius:8px;border:2px solid #e74c3c;box-shadow:0 0 20px rgba(231,76,60,.4)}
-  #bossbar .name{text-align:center;font-weight:bold;color:#ff6666;margin-bottom:4px;letter-spacing:3px;font-size:13px}
-  #bossbar .hpbar{height:14px;background:#333;border-radius:4px;overflow:hidden}
-  #bossbar .hpfill{height:100%;background:linear-gradient(90deg,#c0392b,#ff4444);transition:width .15s}
-  #overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.88);text-align:center;z-index:10;padding:20px}
-  #overlay h1{margin:0 0 10px;font-size:48px;color:#ffcc00;letter-spacing:3px;text-shadow:0 4px 20px rgba(255,204,0,.5)}
-  #overlay p{margin:6px;font-size:16px;opacity:.9;max-width:640px;line-height:1.5}
-  #overlay .keys{margin:20px 0;display:flex;gap:12px;flex-wrap:wrap;justify-content:center;max-width:700px}
-  #overlay .keys div{background:rgba(255,255,255,.08);padding:8px 14px;border-radius:8px;font-size:13px}
-  #overlay .keys kbd{background:#333;padding:2px 8px;border-radius:4px;font-weight:bold;color:#ffcc00;margin:0 1px}
-  #overlay button{margin-top:22px;padding:15px 44px;font-size:18px;border:0;border-radius:10px;background:linear-gradient(180deg,#ffcc00,#f39c12);color:#111;cursor:pointer;font-weight:bold;letter-spacing:1px;box-shadow:0 4px 20px rgba(255,204,0,.4)}
-  #overlay button:hover{filter:brightness(1.1)}
-  #msg{position:fixed;top:20%;left:50%;transform:translateX(-50%);font-size:22px;font-weight:bold;color:#ffcc00;text-shadow:0 0 20px #000,0 0 8px #ffcc00;pointer-events:none;opacity:0;transition:opacity .3s;z-index:6;text-align:center}
-  #crosshair{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:40px;pointer-events:none;z-index:4;opacity:0;transition:opacity .2s}
-  #crosshair.active{opacity:1}
-  #crosshair .ch-line{position:absolute;background:rgba(255,255,255,.95);box-shadow:0 0 3px #000}
-  #crosshair .ch-top{top:0;left:50%;width:2px;height:12px;transform:translateX(-50%)}
-  #crosshair .ch-bottom{bottom:0;left:50%;width:2px;height:12px;transform:translateX(-50%)}
-  #crosshair .ch-left{left:0;top:50%;width:12px;height:2px;transform:translateY(-50%)}
-  #crosshair .ch-right{right:0;top:50%;width:12px;height:2px;transform:translateY(-50%)}
-  #crosshair .ch-dot{position:absolute;top:50%;left:50%;width:4px;height:4px;background:#ff5050;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 4px #000}
-  #hitmarker{position:fixed;top:50%;left:50%;width:20px;height:20px;transform:translate(-50%,-50%);pointer-events:none;z-index:4;opacity:0}
-  #hitmarker.show{opacity:1}
-  #hitmarker::before,#hitmarker::after{content:'';position:absolute;background:#ff3333;box-shadow:0 0 4px #000}
-  #hitmarker::before{top:50%;left:0;width:100%;height:2px;transform:translateY(-50%) rotate(45deg)}
-  #hitmarker::after{top:0;left:50%;width:2px;height:100%;transform:translateX(-50%) rotate(45deg)}
-  /* MOBILE */
-  #mobile-ui{display:none;position:fixed;inset:0;pointer-events:none;z-index:3}
-  #mobile-ui.active{display:block}
-  #joystick-base{position:fixed;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,0.12);border:3px solid rgba(255,255,255,0.35);pointer-events:none;opacity:0.4;transition:opacity .2s;transform:translate(-50%,-50%);display:none}
-  #joystick-base.visible{display:block;opacity:0.75}
-  #joystick-knob{position:absolute;width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,0.65);border:2px solid rgba(255,255,255,0.95);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none}
-  #mobile-buttons{position:fixed;right:20px;bottom:20px;display:flex;flex-direction:column-reverse;gap:12px;pointer-events:none}
-  #mobile-buttons button{width:70px;height:70px;border-radius:50%;pointer-events:auto;font-size:26px;font-weight:bold;background:rgba(0,0,0,0.55);border:3px solid rgba(255,255,255,0.5);color:#fff;touch-action:none}
-  #mobile-buttons button:active{background:rgba(255,204,0,0.5);border-color:#ffcc00}
-  #mobile-buttons #m-fire{width:95px;height:95px;font-size:20px;background:rgba(231,76,60,0.65);border-color:#ff6666}
-  #mobile-buttons #m-fire:active{background:rgba(255,100,80,0.9)}
-  #mobile-buttons #m-shop{background:rgba(255,204,0,0.5);border-color:#ffcc00}
-  /* MODALES */
-  .modal{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:20;display:none;align-items:center;justify-content:center;padding:20px}
-  .modal.show{display:flex}
-  .modal-inner{background:#1a1a2a;border-radius:14px;padding:24px;max-width:520px;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.7);border:2px solid #333}
-  .modal-inner h2{margin:0 0 16px;color:#ffcc00;text-align:center;letter-spacing:2px}
-  .shop-gold{text-align:center;font-size:18px;margin-bottom:16px;color:#ffcc00}
-  .shop-item{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;margin:8px 0;background:rgba(255,255,255,.06);border-radius:8px;border:1px solid rgba(255,255,255,.1)}
-  .shop-item .name{font-weight:bold}
-  .shop-item .desc{font-size:12px;opacity:.7;margin-top:2px}
-  .shop-item button{padding:8px 16px;background:#ffcc00;color:#111;border:0;border-radius:6px;font-weight:bold;cursor:pointer;font-size:13px}
-  .shop-item button:disabled{background:#444;color:#888;cursor:not-allowed}
-  .modal-close{margin-top:16px;padding:12px 24px;background:#555;color:#fff;border:0;border-radius:8px;cursor:pointer;font-size:14px;width:100%}
-  .modal-close:hover{background:#666}
-  .mp-input{width:100%;padding:12px;font-size:18px;text-align:center;background:#0a0a15;border:2px solid #333;color:#ffcc00;border-radius:8px;margin-bottom:12px;letter-spacing:4px;font-weight:bold;text-transform:uppercase}
-  .mp-btns{display:flex;gap:8px;margin-bottom:12px}
-  .mp-btns button{flex:1;padding:10px;background:#ffcc00;color:#111;border:0;border-radius:6px;font-weight:bold;cursor:pointer;font-size:13px}
-  .mp-btns button.secondary{background:#666;color:#fff}
-  #mp-status{text-align:center;padding:10px;background:rgba(255,255,255,.06);border-radius:6px;margin:8px 0;min-height:20px;font-size:13px}
+html,body{margin:0;height:100%;overflow:hidden;background:#87CEEB;font-family:system-ui,sans-serif;color:#fff;user-select:none;-webkit-user-select:none;touch-action:none}
+canvas{display:block}
+#hud{position:fixed;top:12px;left:12px;font-size:15px;line-height:1.5;text-shadow:0 2px 4px #000;pointer-events:none;background:rgba(0,0,0,.5);padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.15);z-index:5}
+#hud b{color:#7CFC00}
+#hud .gold{color:#ffcc00}
+#hud .hpbar{width:160px;height:9px;background:#333;border-radius:4px;overflow:hidden;margin:4px 0}
+#hud .hpfill{height:100%;background:linear-gradient(90deg,#e74c3c,#f39c12,#2ecc71);transition:width .15s}
+#hud .weapon{color:#ffcc00;font-weight:bold}
+#profile{position:fixed;top:12px;right:12px;background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:8px 14px;z-index:6;text-align:right;font-size:13px}
+#profile .pname{font-weight:bold;color:#ffcc00}
+#profile .online{font-size:11px;opacity:.75;margin-top:2px}
+#wselector{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:5;pointer-events:none}
+.wslot{padding:8px 14px;border-radius:8px;background:rgba(0,0,0,.6);border:2px solid rgba(255,255,255,.2);font-size:13px;font-weight:bold;color:#aaa;transition:.15s;min-width:80px;text-align:center}
+.wslot.active{border-color:#ffcc00;color:#ffcc00;background:rgba(255,204,0,.15);box-shadow:0 0 12px rgba(255,204,0,.4)}
+.wslot.empty{opacity:.35}
+.wslot .kbd{display:inline-block;background:#333;padding:1px 6px;border-radius:3px;margin-right:4px;color:#ffcc00;font-size:11px}
+#bossbar{position:fixed;top:12px;left:50%;transform:translateX(-50%);width:50%;max-width:640px;pointer-events:none;display:none;z-index:5}
+#bossbar .frame{background:rgba(0,0,0,.85);padding:6px 8px;border-radius:8px;border:2px solid #e74c3c;box-shadow:0 0 20px rgba(231,76,60,.4)}
+#bossbar .name{text-align:center;font-weight:bold;color:#ff6666;margin-bottom:4px;letter-spacing:3px;font-size:13px}
+#bossbar .hpbar{height:14px;background:#333;border-radius:4px;overflow:hidden}
+#bossbar .hpfill{height:100%;background:linear-gradient(90deg,#c0392b,#ff4444);transition:width .15s}
+#overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.88);text-align:center;z-index:10;padding:20px}
+#overlay h1{margin:0 0 10px;font-size:44px;color:#ffcc00;letter-spacing:3px;text-shadow:0 4px 20px rgba(255,204,0,.5)}
+#overlay p{margin:6px;font-size:16px;opacity:.9;max-width:640px;line-height:1.5}
+#overlay .keys{margin:20px 0;display:flex;gap:12px;flex-wrap:wrap;justify-content:center;max-width:700px}
+#overlay .keys div{background:rgba(255,255,255,.08);padding:8px 14px;border-radius:8px;font-size:13px}
+#overlay .keys kbd{background:#333;padding:2px 8px;border-radius:4px;font-weight:bold;color:#ffcc00;margin:0 1px}
+#overlay input{margin:8px 0;padding:10px 16px;font-size:16px;border-radius:8px;border:2px solid #555;background:#0a0a15;color:#ffcc00;text-align:center;width:260px}
+#overlay button{margin-top:22px;padding:15px 44px;font-size:18px;border:0;border-radius:10px;background:linear-gradient(180deg,#ffcc00,#f39c12);color:#111;cursor:pointer;font-weight:bold;letter-spacing:1px;box-shadow:0 4px 20px rgba(255,204,0,.4)}
+#overlay button:hover{filter:brightness(1.1)}
+#msg{position:fixed;top:20%;left:50%;transform:translateX(-50%);font-size:22px;font-weight:bold;color:#ffcc00;text-shadow:0 0 20px #000,0 0 8px #ffcc00;pointer-events:none;opacity:0;transition:opacity .3s;z-index:6;text-align:center}
+#crosshair{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:40px;height:40px;pointer-events:none;z-index:4;opacity:0;transition:opacity .2s}
+#crosshair.active{opacity:1}
+#crosshair .ch-line{position:absolute;background:rgba(255,255,255,.95);box-shadow:0 0 3px #000}
+#crosshair .ch-top{top:0;left:50%;width:2px;height:12px;transform:translateX(-50%)}
+#crosshair .ch-bottom{bottom:0;left:50%;width:2px;height:12px;transform:translateX(-50%)}
+#crosshair .ch-left{left:0;top:50%;width:12px;height:2px;transform:translateY(-50%)}
+#crosshair .ch-right{right:0;top:50%;width:12px;height:2px;transform:translateY(-50%)}
+#crosshair .ch-dot{position:absolute;top:50%;left:50%;width:4px;height:4px;background:#ff5050;border-radius:50%;transform:translate(-50%,-50%);box-shadow:0 0 4px #000}
+#hitmarker{position:fixed;top:50%;left:50%;width:20px;height:20px;transform:translate(-50%,-50%);pointer-events:none;z-index:4;opacity:0}
+#hitmarker.show{opacity:1}
+#hitmarker::before,#hitmarker::after{content:'';position:absolute;background:#ff3333;box-shadow:0 0 4px #000}
+#hitmarker::before{top:50%;left:0;width:100%;height:2px;transform:translateY(-50%) rotate(45deg)}
+#hitmarker::after{top:0;left:50%;width:2px;height:100%;transform:translateX(-50%) rotate(45deg)}
+#mobile-ui{display:none;position:fixed;inset:0;pointer-events:none;z-index:3}
+#mobile-ui.active{display:block}
+#joystick-base{position:fixed;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,0.12);border:3px solid rgba(255,255,255,0.35);pointer-events:none;opacity:0.4;transition:opacity .2s;transform:translate(-50%,-50%);display:none}
+#joystick-base.visible{display:block;opacity:0.75}
+#joystick-knob{position:absolute;width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,0.65);border:2px solid rgba(255,255,255,0.95);top:50%;left:50%;transform:translate(-50%,-50%)}
+#mobile-buttons{position:fixed;right:20px;bottom:20px;display:flex;flex-direction:column-reverse;gap:12px;pointer-events:none}
+#mobile-buttons button{width:70px;height:70px;border-radius:50%;pointer-events:auto;font-size:22px;font-weight:bold;background:rgba(0,0,0,0.55);border:3px solid rgba(255,255,255,0.5);color:#fff;touch-action:none}
+#mobile-buttons button:active{background:rgba(255,204,0,0.5);border-color:#ffcc00}
+#mobile-buttons #m-fire{width:95px;height:95px;font-size:18px;background:rgba(231,76,60,0.65);border-color:#ff6666}
+#mobile-buttons #m-fire:active{background:rgba(255,100,80,0.9)}
+#mobile-buttons #m-shop{background:rgba(255,204,0,0.5);border-color:#ffcc00}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:20;display:none;align-items:center;justify-content:center;padding:20px}
+.modal.show{display:flex}
+.modal-inner{background:#1a1a2a;border-radius:14px;padding:24px;max-width:520px;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.7);border:2px solid #333}
+.modal-inner h2{margin:0 0 16px;color:#ffcc00;text-align:center;letter-spacing:2px}
+.shop-gold{text-align:center;font-size:18px;margin-bottom:16px;color:#ffcc00}
+.shop-item{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;margin:8px 0;background:rgba(255,255,255,.06);border-radius:8px;border:1px solid rgba(255,255,255,.1)}
+.shop-item .name{font-weight:bold}
+.shop-item .desc{font-size:12px;opacity:.7;margin-top:2px}
+.shop-item button{padding:8px 16px;background:#ffcc00;color:#111;border:0;border-radius:6px;font-weight:bold;cursor:pointer;font-size:13px}
+.shop-item button:disabled{background:#444;color:#888;cursor:not-allowed}
+.modal-close{margin-top:16px;padding:12px 24px;background:#555;color:#fff;border:0;border-radius:8px;cursor:pointer;font-size:14px;width:100%}
+.modal-close:hover{background:#666}
 </style>
 <script type="importmap">
 { "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js",
-  "peerjs": "https://cdn.jsdelivr.net/npm/peerjs@1.5.4/+esm"
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/",
+  "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm"
 } }
 </script>
 </head>
@@ -91,23 +89,18 @@
   <div>Oleada: <b id="wave">1</b></div>
   <div>Arma: <span class="weapon" id="weapon">Pistola [∞]</span></div>
 </div>
+<div id="profile">
+  <div class="pname" id="profile-name">Cargando...</div>
+  <div class="online"><span id="mp-online">0</span> jugadores reales</div>
+</div>
 <div id="wselector">
   <div class="wslot active" data-w="pistol"><span class="kbd">1</span>Pistola</div>
   <div class="wslot empty" data-w="shotgun"><span class="kbd">2</span>Escopeta</div>
   <div class="wslot empty" data-w="rifle"><span class="kbd">3</span>Rifle</div>
 </div>
-<div id="bossbar">
-  <div class="frame">
-    <div class="name">⚠ JEFE ⚠</div>
-    <div class="hpbar"><div class="hpfill" id="bosshp" style="width:100%"></div></div>
-  </div>
-</div>
+<div id="bossbar"><div class="frame"><div class="name">⚠ JEFE ⚠</div><div class="hpbar"><div class="hpfill" id="bosshp" style="width:100%"></div></div></div></div>
 <div id="msg"></div>
-<div id="crosshair">
-  <div class="ch-line ch-top"></div><div class="ch-line ch-bottom"></div>
-  <div class="ch-line ch-left"></div><div class="ch-line ch-right"></div>
-  <div class="ch-dot"></div>
-</div>
+<div id="crosshair"><div class="ch-line ch-top"></div><div class="ch-line ch-bottom"></div><div class="ch-line ch-left"></div><div class="ch-line ch-right"></div><div class="ch-dot"></div></div>
 <div id="hitmarker"></div>
 
 <div id="mobile-ui">
@@ -119,7 +112,6 @@
   </div>
 </div>
 
-<!-- TIENDA -->
 <div id="shop-modal" class="modal">
   <div class="modal-inner">
     <h2>🛒 TIENDA</h2>
@@ -129,56 +121,50 @@
   </div>
 </div>
 
-<!-- MULTIJUGADOR -->
-<div id="mp-modal" class="modal">
-  <div class="modal-inner">
-    <h2>🌐 MULTIJUGADOR (BETA)</h2>
-    <p style="font-size:13px;opacity:.8;line-height:1.5;margin:0 0 16px">Verás a otros jugadores moverse en el mismo mapa. Los enemigos son locales de cada jugador.</p>
-    <input id="mp-room" class="mp-input" placeholder="CÓDIGO" maxlength="6">
-    <div class="mp-btns">
-      <button id="mp-host">Crear sala</button>
-      <button id="mp-join" class="secondary">Unirse</button>
-    </div>
-    <div id="mp-status">Sin conexión</div>
-    <button class="modal-close" id="mp-close">Cerrar (M)</button>
-  </div>
-</div>
-
 <div id="overlay">
   <h1>LOOT &amp; SHOOTER 3D</h1>
-  <p>V4: ciervos, lobos, tienda, selector de armas y multijugador beta.</p>
+  <p>Ciervos, lobos en jauría, dragones y multijugador en tiempo real.</p>
+  <input id="player-name-input" type="text" placeholder="Tu nombre" maxlength="16" value="">
   <div class="keys">
     <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Mover</div>
     <div><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> Armas</div>
     <div><kbd>Click</kbd> Disparar</div>
     <div><kbd>E</kbd> Rehén</div>
     <div><kbd>B</kbd> Tienda</div>
-    <div><kbd>M</kbd> Multijugador</div>
+    <div><kbd>Q</kbd> Cambiar</div>
   </div>
-  <p style="opacity:.6;font-size:13px">Cuidado con osos 🐻 y lobos 🐺. Los ciervos 🦌 huyen.</p>
+  <p style="opacity:.6;font-size:13px">Cuidado con osos 🐻, lobos 🐺 y dragones 🐉. Los ciervos 🦌 huyen.</p>
   <button id="startBtn">JUGAR</button>
 </div>
 
 <script type="module">
 import * as THREE from 'three';
-import Peer from 'peerjs';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { createClient } from '@supabase/supabase-js';
 
 // ============ CONFIG ============
-const WORLD_SIZE = 200;
+const SUPABASE_URL = 'https://yvaizvkoneqqhqkqftcn.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_QG8X26MRcrGwpWoT7B6odw_VaQpr72j';
+const R2_URL = 'https://pub-44db97c536044e3ab6a203cf451fb50d.r2.dev';
+
+const WORLD_SIZE = 400;
 const PLAYER_SPEED = 8;
 const PLAYER_RADIUS = 0.45;
 const DT_CAP = 0.05;
 const BOSS_WAVES = [3, 6, 9, 12];
 const BEAR_WAVES = [2, 4, 7, 10];
 const WOLF_WAVES = [2, 5, 8, 11];
-const WEAPONS_ORDER = ['pistol', 'shotgun', 'rifle'];
-const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+const DEER_COUNT = 100;
+const WOLF_COUNT = 100;
+const DRAGON_COUNT = 3;
 
+const WEAPONS_ORDER = ['pistol', 'shotgun', 'rifle'];
 const WEAPONS = {
   pistol:  { name:'Pistola',  cooldown:0.22, pellets:1, spread:0.008, damage:18, maxAmmo:Infinity, range:80 },
   shotgun: { name:'Escopeta', cooldown:0.60, pellets:7, spread:0.10,  damage:9,  maxAmmo:24,       range:25 },
   rifle:   { name:'Rifle',    cooldown:0.09, pellets:1, spread:0.020, damage:11, maxAmmo:100,      range:120 }
 };
+const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
 // ============ AUDIO ============
 let audioCtx = null;
@@ -207,7 +193,8 @@ const SFX = {
   bossDie:()=>{beep(150,0.3,'sawtooth',0.09,60);setTimeout(()=>beep(100,0.5,'sawtooth',0.09,40),200);},
   bear:()=>beep(120,0.4,'sawtooth',0.08,50),
   wolf:()=>beep(320,0.3,'sawtooth',0.06,180),
-  deer:()=>beep(600,0.15,'sine',0.04,400),
+  dragon:()=>beep(60,0.6,'sawtooth',0.09,30),
+  fire:()=>beep(200,0.25,'sawtooth',0.06,80),
   gameover:()=>beep(200,0.8,'sawtooth',0.09,50)
 };
 document.addEventListener('click', ensureAudio, {once:true});
@@ -223,17 +210,17 @@ document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87CEEB);
-scene.fog = new THREE.Fog(0x87CEEB, 40, 140);
-const camera = new THREE.PerspectiveCamera(72, innerWidth/innerHeight, 0.1, 300);
+scene.fog = new THREE.Fog(0x87CEEB, 60, 220);
+const camera = new THREE.PerspectiveCamera(72, innerWidth/innerHeight, 0.1, 400);
 
 const ambient = new THREE.AmbientLight(0xffffff, 0.55);
 scene.add(ambient);
 const sun = new THREE.DirectionalLight(0xfff3c4, 1.1);
 sun.castShadow = true;
 sun.shadow.mapSize.set(isTouch ? 1024 : 2048, isTouch ? 1024 : 2048);
-sun.shadow.camera.left = -40; sun.shadow.camera.right = 40;
-sun.shadow.camera.top = 40; sun.shadow.camera.bottom = -40;
-sun.shadow.camera.near = 1; sun.shadow.camera.far = 150;
+sun.shadow.camera.left = -50; sun.shadow.camera.right = 50;
+sun.shadow.camera.top = 50; sun.shadow.camera.bottom = -50;
+sun.shadow.camera.near = 1; sun.shadow.camera.far = 200;
 sun.shadow.bias = -0.0005;
 scene.add(sun); scene.add(sun.target);
 
@@ -255,7 +242,7 @@ function makeGrassTexture(){
   }
   const t = new THREE.CanvasTexture(c);
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.repeat.set(30,30);
+  t.repeat.set(60,60);
   t.anisotropy = renderer.capabilities.getMaxAnisotropy();
   return t;
 }
@@ -268,13 +255,9 @@ function makeWoodTexture(){
     x.lineWidth = 1+Math.random();
     x.beginPath(); x.moveTo(0, Math.random()*128); x.lineTo(128, Math.random()*128); x.stroke();
   }
-  for(let i=0;i<10;i++){
-    x.fillStyle = 'rgba(0,0,0,0.15)';
-    x.fillRect(Math.random()*128, 0, 1.5, 128);
-  }
+  for(let i=0;i<10;i++){ x.fillStyle = 'rgba(0,0,0,0.15)'; x.fillRect(Math.random()*128, 0, 1.5, 128); }
   const t = new THREE.CanvasTexture(c);
-  t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.repeat.set(2,2);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(2,2);
   return t;
 }
 function makeBarkTexture(){
@@ -284,10 +267,8 @@ function makeBarkTexture(){
   for(let i=0;i<20;i++){
     x.strokeStyle = `rgba(30,15,5,${0.2+Math.random()*0.3})`;
     x.lineWidth = 1+Math.random()*1.5;
-    x.beginPath();
     const px = Math.random()*64;
-    x.moveTo(px, 0); x.lineTo(px + (Math.random()-0.5)*8, 64);
-    x.stroke();
+    x.beginPath(); x.moveTo(px, 0); x.lineTo(px + (Math.random()-0.5)*8, 64); x.stroke();
   }
   const t = new THREE.CanvasTexture(c);
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
@@ -295,25 +276,23 @@ function makeBarkTexture(){
 }
 
 // ============ GROUND ============
+const groundGeo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE);
 const groundMat = new THREE.MeshLambertMaterial({ map: makeGrassTexture() });
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE), groundMat);
+const ground = new THREE.Mesh(groundGeo, groundMat);
 ground.rotation.x = -Math.PI/2;
 ground.receiveShadow = true;
 scene.add(ground);
 
 const BOUND = WORLD_SIZE/2;
+const boundaryMat = new THREE.MeshLambertMaterial({ color: 0x2a3d1e, transparent:true, opacity:0.0 });
 const boundaryBoxes = [];
-const boundaryMat = new THREE.MeshBasicMaterial({ visible: false });
 function addBoundary(x,z,w,d){
   const m = new THREE.Mesh(new THREE.BoxGeometry(w,5,d), boundaryMat);
-  m.position.set(x,2.5,z);
-  scene.add(m);
+  m.position.set(x,2.5,z); scene.add(m);
   boundaryBoxes.push(new THREE.Box3().setFromObject(m));
 }
-addBoundary(0, -BOUND, WORLD_SIZE, 2);
-addBoundary(0,  BOUND, WORLD_SIZE, 2);
-addBoundary(-BOUND, 0, 2, WORLD_SIZE);
-addBoundary( BOUND, 0, 2, WORLD_SIZE);
+addBoundary(0, -BOUND, WORLD_SIZE, 2); addBoundary(0, BOUND, WORLD_SIZE, 2);
+addBoundary(-BOUND, 0, 2, WORLD_SIZE); addBoundary(BOUND, 0, 2, WORLD_SIZE);
 
 // ============ COLLECTIONS ============
 const wallMeshes = [];
@@ -343,21 +322,40 @@ const leafMats = [
   new THREE.MeshLambertMaterial({ color: 0x4a7a2a })
 ];
 
+// ============ GLB LOADER (opcional) ============
+const glbLoader = new GLTFLoader();
+const glbCache = { avatar: null, dragon: null };
+async function tryLoadGLB(name){
+  return new Promise(resolve => {
+    glbLoader.load(`${R2_URL}/${name}.glb`,
+      gltf => resolve(gltf.scene),
+      undefined,
+      () => resolve(null)
+    );
+  });
+}
+async function loadOptionalGLB(){
+  try {
+    const results = await Promise.allSettled([tryLoadGLB('avatar'), tryLoadGLB('dragon')]);
+    glbCache.avatar = results[0].status === 'fulfilled' ? results[0].value : null;
+    glbCache.dragon = results[1].status === 'fulfilled' ? results[1].value : null;
+    console.log('GLB opcionales:', { avatar: !!glbCache.avatar, dragon: !!glbCache.dragon });
+  } catch(e){ console.warn('GLB load failed:', e); }
+}
+
 // ============ TREES ============
 function createTreeMesh(){
   const group = new THREE.Group();
   const trunkH = 2.5 + Math.random()*1.5;
   const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.3, trunkH, 7), barkMat);
-  trunk.position.y = trunkH/2; trunk.castShadow = true; group.add(trunk);
+  trunk.position.y = trunkH/2; trunk.castShadow = true; trunk.receiveShadow = true; group.add(trunk);
   const numLeaves = 4 + Math.floor(Math.random()*3);
   for (let i = 0; i < numLeaves; i++){
     const r = 1.1 + Math.random()*0.8;
-    const leaf = new THREE.Mesh(
-      new THREE.SphereGeometry(r, 7, 5),
-      leafMats[Math.floor(Math.random()*leafMats.length)]
-    );
+    const leaf = new THREE.Mesh(new THREE.SphereGeometry(r, 7, 5),
+      leafMats[Math.floor(Math.random()*leafMats.length)]);
     leaf.position.set((Math.random()-0.5)*1.4, trunkH + (Math.random()-0.2)*1.4, (Math.random()-0.5)*1.4);
-    leaf.castShadow = true; group.add(leaf);
+    leaf.castShadow = true; leaf.receiveShadow = true; group.add(leaf);
   }
   return group;
 }
@@ -368,14 +366,13 @@ function addTree(x, z){
   scene.add(tree);
   const trunkBox = new THREE.Mesh(new THREE.BoxGeometry(0.7, 3, 0.7),
     new THREE.MeshBasicMaterial({ visible: false }));
-  trunkBox.position.set(x, 1.5, z);
-  scene.add(trunkBox);
+  trunkBox.position.set(x, 1.5, z); scene.add(trunkBox);
   wallMeshes.push(trunkBox);
   wallBoxes.push(new THREE.Box3().setFromObject(trunkBox));
   treeData.push({ x, z, mesh: tree, box: trunkBox });
 }
 
-// ============ GRASS WIND ============
+// ============ GRASS ============
 let grassMaterial = null, grassMesh = null;
 function createGrassField(count){
   const geo = new THREE.PlaneGeometry(0.12, 1.1);
@@ -386,8 +383,8 @@ function createGrassField(count){
     shader.vertexShader = shader.vertexShader.replace('#include <common>',
       `#include <common>
        uniform float uTime;
-       varying float vGrassY;`)
-    .replace('#include <begin_vertex>',
+       varying float vGrassY;`
+    ).replace('#include <begin_vertex>',
       `#include <begin_vertex>
        vGrassY = position.y;
        float worldX = instanceMatrix[3].x;
@@ -396,16 +393,18 @@ function createGrassField(count){
        wind += sin(uTime * 2.6 + worldX * 0.6) * 0.07;
        float hN = clamp(position.y, 0.0, 1.1) / 1.1;
        transformed.x += wind * hN * hN;
-       transformed.z += wind * 0.4 * hN * hN;`);
+       transformed.z += wind * 0.4 * hN * hN;`
+    );
     shader.fragmentShader = shader.fragmentShader.replace('#include <common>',
       `#include <common>
-       varying float vGrassY;`)
-    .replace('#include <color_fragment>',
+       varying float vGrassY;`
+    ).replace('#include <color_fragment>',
       `#include <color_fragment>
        float hMix = clamp(vGrassY / 1.1, 0.0, 1.0);
        vec3 baseC = vec3(0.12, 0.28, 0.07);
        vec3 tipC = vec3(0.5, 0.75, 0.22);
-       diffuseColor.rgb = mix(baseC, tipC, pow(hMix, 0.7));`);
+       diffuseColor.rgb = mix(baseC, tipC, pow(hMix, 0.7));`
+    );
     grassMaterial.userData.shader = shader;
   };
   grassMesh = new THREE.InstancedMesh(geo, grassMaterial, count);
@@ -436,14 +435,10 @@ function createHumanoid(shirtColor, skinColor = 0xf0c090, scale = 1){
   const boot = new THREE.MeshLambertMaterial({ color: 0x111111 });
   const hair = new THREE.MeshLambertMaterial({ color: 0x2a1a0a });
   const belt = new THREE.MeshLambertMaterial({ color: 0x3a2010 });
-
   const head = new THREE.Mesh(new THREE.SphereGeometry(0.11*scale, 16, 12), skin);
-  head.scale.set(1, 1.15, 1);
-  head.position.y = 1.7*scale; head.castShadow = true; g.add(head);
-
+  head.scale.set(1, 1.15, 1); head.position.y = 1.7*scale; head.castShadow = true; g.add(head);
   const hairMesh = new THREE.Mesh(new THREE.SphereGeometry(0.115*scale, 14, 10, 0, Math.PI*2, 0, Math.PI*0.55), hair);
   hairMesh.position.y = 1.72*scale; hairMesh.castShadow = true; g.add(hairMesh);
-
   const eyeWhite = new THREE.MeshLambertMaterial({ color: 0xffffff });
   const eyePupil = new THREE.MeshBasicMaterial({ color: 0x000000 });
   for (const sx of [-1, 1]){
@@ -454,23 +449,17 @@ function createHumanoid(shirtColor, skinColor = 0xf0c090, scale = 1){
   }
   const nose = new THREE.Mesh(new THREE.ConeGeometry(0.022*scale, 0.04*scale, 5), skin);
   nose.rotation.x = Math.PI/2; nose.position.set(0, 1.68*scale, -0.11*scale); g.add(nose);
-
   const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.05*scale, 0.06*scale, 0.08*scale, 8), skin);
   neck.position.y = 1.58*scale; g.add(neck);
-
   const torso = new THREE.Mesh(new THREE.BoxGeometry(0.42*scale, 0.55*scale, 0.24*scale), shirt);
   torso.position.y = 1.25*scale; torso.castShadow = true; g.add(torso);
-
   const beltMesh = new THREE.Mesh(new THREE.BoxGeometry(0.44*scale, 0.06*scale, 0.26*scale), belt);
   beltMesh.position.y = 0.96*scale; g.add(beltMesh);
-
   const hips = new THREE.Mesh(new THREE.BoxGeometry(0.4*scale, 0.16*scale, 0.24*scale), dark);
   hips.position.y = 0.86*scale; g.add(hips);
-
   for (const sx of [-1, 1]){
     const upper = new THREE.Mesh(new THREE.CapsuleGeometry(0.055*scale, 0.28*scale, 3, 8), shirt);
-    upper.position.set(sx*0.26*scale, 1.32*scale, 0);
-    upper.rotation.z = sx * 0.08; upper.castShadow = true; g.add(upper);
+    upper.position.set(sx*0.26*scale, 1.32*scale, 0); upper.rotation.z = sx * 0.08; upper.castShadow = true; g.add(upper);
     const fore = new THREE.Mesh(new THREE.CapsuleGeometry(0.05*scale, 0.26*scale, 3, 8), skin);
     fore.position.set(sx*0.28*scale, 0.95*scale, -0.02*scale); g.add(fore);
     const hand = new THREE.Mesh(new THREE.BoxGeometry(0.08*scale, 0.09*scale, 0.08*scale), skin);
@@ -492,7 +481,6 @@ function createWeaponMesh(type){
   const metal = new THREE.MeshLambertMaterial({ color: 0x555555 });
   const wood = new THREE.MeshLambertMaterial({ color: 0x5a3020 });
   const skin = new THREE.MeshLambertMaterial({ color: 0xf0c090 });
-
   if (type === 'pistol'){
     const body = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.1, 0.28), black);
     body.position.set(0, 0, -0.14); g.add(body);
@@ -544,7 +532,6 @@ function createBearMesh(){
   const snout = new THREE.MeshLambertMaterial({ color: 0x1a0f06 });
   const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
   const clawMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
-
   const body = new THREE.Mesh(new THREE.SphereGeometry(0.8, 12, 10), fur);
   body.scale.set(1.4, 1, 1); body.position.y = 1.0; body.castShadow = true; g.add(body);
   const hump = new THREE.Mesh(new THREE.SphereGeometry(0.5, 10, 8), fur);
@@ -572,71 +559,43 @@ function createBearMesh(){
   return g;
 }
 
-// ============ DEER ============
-function createDeerMesh(){
+// ============ DRAGON (procedural) ============
+function createDragonMesh(){
   const g = new THREE.Group();
-  const fur = new THREE.MeshLambertMaterial({ color: 0x8b5a2b });
-  const lightFur = new THREE.MeshLambertMaterial({ color: 0xc9a875 });
-  const dark = new THREE.MeshLambertMaterial({ color: 0x3a1f0a });
-
-  const body = new THREE.Mesh(new THREE.SphereGeometry(0.5, 10, 8), fur);
-  body.scale.set(1.3, 0.9, 0.7); body.position.y = 0.7; body.castShadow = true; g.add(body);
-  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.2, 0.5, 8), fur);
-  neck.position.set(0.6, 1.1, 0); neck.rotation.z = -0.3; g.add(neck);
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), fur);
-  head.position.set(0.85, 1.3, 0); head.scale.set(1.3, 1, 0.9); g.add(head);
-  const snout = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), lightFur);
-  snout.position.set(1.05, 1.25, 0); g.add(snout);
-  for (const sz of [-1, 1]){
-    const ear = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.15, 6), fur);
-    ear.position.set(0.75, 1.5, 0.15*sz); g.add(ear);
-  }
-  if (Math.random() < 0.5){
-    for (const sz of [-1, 1]){
-      const antler = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.3, 5), dark);
-      antler.position.set(0.8, 1.55, 0.1*sz);
-      antler.rotation.z = 0.2*sz; g.add(antler);
-      const tip = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.02, 0.2, 5), dark);
-      tip.position.set(0.75, 1.75, 0.15*sz);
-      tip.rotation.z = 0.5*sz; g.add(tip);
-    }
-  }
-  for (const [lx, lz] of [[0.3, 0.2], [0.3, -0.2], [-0.3, 0.2], [-0.3, -0.2]]){
-    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.05, 0.6, 6), fur);
-    leg.position.set(lx, 0.3, lz); g.add(leg);
-  }
-  const tail = new THREE.Mesh(new THREE.SphereGeometry(0.1, 6, 6), lightFur);
-  tail.position.set(-0.6, 0.85, 0); g.add(tail);
-  return g;
-}
-
-// ============ WOLF ============
-function createWolfMesh(){
-  const g = new THREE.Group();
-  const fur = new THREE.MeshLambertMaterial({ color: 0x555555 });
-  const darkFur = new THREE.MeshLambertMaterial({ color: 0x222222 });
+  const bodyMat = new THREE.MeshLambertMaterial({ color: 0x4a0a0a });
+  const wingMat = new THREE.MeshLambertMaterial({ color: 0x6a1a1a, side: THREE.DoubleSide });
+  const hornMat = new THREE.MeshLambertMaterial({ color: 0x1a0505 });
   const eyeMat = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
-
-  const body = new THREE.Mesh(new THREE.SphereGeometry(0.5, 10, 8), fur);
-  body.scale.set(1.6, 0.75, 0.7); body.position.y = 0.6; body.castShadow = true; g.add(body);
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 10, 8), fur);
-  head.scale.set(1.2, 1, 0.9); head.position.set(0.85, 0.85, 0); g.add(head);
-  const snout = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.3, 8), fur);
-  snout.rotation.z = -Math.PI/2; snout.position.set(1.15, 0.78, 0); g.add(snout);
-  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 6), darkFur);
-  nose.position.set(1.3, 0.78, 0); g.add(nose);
+  // Cuerpo
+  const body = new THREE.Mesh(new THREE.SphereGeometry(1.2, 12, 10), bodyMat);
+  body.scale.set(2.2, 1.1, 1); body.castShadow = true; g.add(body);
+  // Cuello
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.5, 1.5, 8), bodyMat);
+  neck.position.set(1.8, 0.6, 0); neck.rotation.z = -0.5; g.add(neck);
+  // Cabeza
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.6, 10, 8), bodyMat);
+  head.position.set(2.6, 1.1, 0); head.scale.set(1.5, 1, 1); head.castShadow = true; g.add(head);
+  // Cuernos
   for (const sz of [-1, 1]){
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 6), eyeMat);
-    eye.position.set(0.95, 0.95, 0.13*sz); g.add(eye);
-    const ear = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.18, 6), fur);
-    ear.position.set(0.7, 1.1, 0.15*sz); ear.rotation.z = -0.2; g.add(ear);
+    const horn = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.5, 6), hornMat);
+    horn.position.set(2.3, 1.6, 0.2*sz); horn.rotation.z = 0.3; g.add(horn);
   }
-  for (const [lx, lz] of [[0.35, 0.2], [0.35, -0.2], [-0.35, 0.2], [-0.35, -0.2]]){
-    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.06, 0.6, 6), darkFur);
-    leg.position.set(lx, 0.3, lz); g.add(leg);
+  // Ojos
+  for (const sz of [-1, 1]){
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.1, 6, 6), eyeMat);
+    eye.position.set(2.9, 1.2, 0.3*sz); g.add(eye);
   }
-  const tail = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.4, 6), fur);
-  tail.rotation.z = -Math.PI/4; tail.position.set(-0.75, 0.9, 0); g.add(tail);
+  // Cola
+  const tail = new THREE.Mesh(new THREE.ConeGeometry(0.4, 3, 6), bodyMat);
+  tail.rotation.z = Math.PI/2; tail.position.set(-2.5, 0, 0); g.add(tail);
+  // Alas
+  for (const sz of [-1, 1]){
+    const wing = new THREE.Mesh(new THREE.PlaneGeometry(3.5, 2), wingMat);
+    wing.position.set(-0.3, 1.2, 1.5*sz);
+    wing.rotation.x = sz * 0.3;
+    wing.rotation.z = 0.2;
+    g.add(wing);
+  }
   return g;
 }
 
@@ -655,13 +614,18 @@ function createMarker(text, color){
 let playerMesh, playerGunGroup;
 const player = {
   position: new THREE.Vector3(0,0,0), hp: 100, maxHp: 100, lvl: 1,
-  weapon: 'pistol',
-  ammo: { pistol: Infinity, shotgun: 0, rifle: 0 },
+  weapon: 'pistol', ammo: { pistol: Infinity, shotgun: 0, rifle: 0 },
   recoil: 0, swayPhase: 0
 };
 
 function buildPlayer(){
-  playerMesh = createHumanoid(0x3498db, 0xf0c090, 1);
+  if (glbCache.avatar){
+    playerMesh = glbCache.avatar.clone();
+    playerMesh.scale.set(1,1,1);
+    playerMesh.traverse(c => { if (c.isMesh) c.castShadow = true; });
+  } else {
+    playerMesh = createHumanoid(0x3498db, 0xf0c090, 1);
+  }
   playerMesh.position.copy(player.position);
   scene.add(playerMesh);
   playerGunGroup = new THREE.Group();
@@ -674,10 +638,10 @@ function updatePlayerWeaponMesh(){
   playerGunGroup.add(createWeaponMesh(player.weapon));
 }
 
-// ============ ENEMIES ============
+// ============ ENEMIES (humanos, osos, jefes - como v3) ============
 let enemies = [];
 let boss = null;
-let score = 0, gold = 0, wave = 1, waveTimer = 0, spawnTimer = 0, bearSpawnTimer = 0, wolfSpawnTimer = 0, deerSpawnTimer = 0;
+let score = 0, gold = 0, wave = 1, waveTimer = 0, spawnTimer = 0, bearSpawnTimer = 0;
 let running = false, gameOver = false;
 
 function spawnEnemy(x, z){
@@ -690,11 +654,9 @@ function spawnEnemy(x, z){
     alert: false, lastSeenX: x, lastSeenZ: z, lastSeenTime: 999,
     shootCd: 1.5 + Math.random()*0.6, lastShot: 0,
     wanderAng: Math.random()*Math.PI*2, wanderTimer: 0,
-    isBoss: false, isBear: false, isWolf: false, isDeer: false,
-    strafeDir: Math.random()<0.5?-1:1
+    isBoss: false, isBear: false, strafeDir: Math.random()<0.5?-1:1
   };
-  mesh.userData.enemyRef = e; enemies.push(e);
-  return e;
+  mesh.userData.enemyRef = e; enemies.push(e); return e;
 }
 function spawnBoss(x, z){
   const mesh = createHumanoid(0x6a0000, 0x8a1010, 1.7);
@@ -705,10 +667,10 @@ function spawnBoss(x, z){
     visionRange: 35, visionAngle: Math.PI * 0.9,
     alert: true, lastSeenX: x, lastSeenZ: z, lastSeenTime: 0,
     shootCd: 1.0, lastShot: 0, wanderAng: 0, wanderTimer: 0,
-    isBoss: true, isBear: false, isWolf: false, isDeer: false, strafeDir: 1
+    isBoss: true, isBear: false, strafeDir: 1
   };
-  mesh.userData.enemyRef = e; enemies.push(e);
-  boss = e; SFX.boss(); updateBossBar();
+  mesh.userData.enemyRef = e; enemies.push(e); boss = e;
+  SFX.boss(); updateBossBar();
 }
 function spawnBear(x, z){
   const mesh = createBearMesh();
@@ -717,79 +679,32 @@ function spawnBear(x, z){
     mesh, hp: 180 + wave*30, maxHp: 180 + wave*30,
     speed: 3.5, r: 1.0, visionRange: 15, visionAngle: Math.PI*2,
     alert: false, lastSeenX: x, lastSeenZ: z, lastSeenTime: 999,
-    meleeCd: 1.2, lastBite: 0, wanderAng: Math.random()*Math.PI*2, wanderTimer: 0,
-    isBoss: false, isBear: true, isWolf: false, isDeer: false
-  };
-  mesh.userData.enemyRef = e; enemies.push(e); SFX.bear();
-  return e;
-}
-function spawnWolf(x, z){
-  const mesh = createWolfMesh();
-  mesh.position.set(x, 0, z); scene.add(mesh);
-  const e = {
-    mesh, hp: 60, maxHp: 60,
-    speed: 5.5, r: 0.5, visionRange: 18, visionAngle: Math.PI*2,
-    alert: false, lastSeenX: x, lastSeenZ: z, lastSeenTime: 999,
-    meleeCd: 0.9, lastBite: 0, wanderAng: Math.random()*Math.PI*2, wanderTimer: 0,
-    isBoss: false, isBear: false, isWolf: true, isDeer: false
-  };
-  mesh.userData.enemyRef = e; enemies.push(e);
-  return e;
-}
-function spawnWolfPack(x, z){
-  const count = 2 + Math.floor(Math.random()*3);
-  for (let i = 0; i < count; i++){
-    const wx = x + (Math.random()-0.5)*4;
-    const wz = z + (Math.random()-0.5)*4;
-    if (!checkCollision(wx, wz, 0.6)) spawnWolf(wx, wz);
-  }
-  SFX.wolf();
-}
-function spawnDeer(x, z){
-  const mesh = createDeerMesh();
-  mesh.position.set(x, 0, z); scene.add(mesh);
-  const e = {
-    mesh, hp: 25, maxHp: 25,
-    speed: 5.5, r: 0.6,
-    alert: false, fleeing: false, fleeTimer: 0,
+    shootCd: 0, lastShot: 0, meleeCd: 1.2, lastBite: 0,
     wanderAng: Math.random()*Math.PI*2, wanderTimer: 0,
-    isBoss: false, isBear: false, isWolf: false, isDeer: true
+    isBoss: false, isBear: true, strafeDir: 1
   };
-  mesh.userData.enemyRef = e; enemies.push(e);
-  return e;
+  mesh.userData.enemyRef = e; enemies.push(e); SFX.bear(); return e;
 }
-
 function damageEnemy(e, dmg){
   e.hp -= dmg;
-  if (!e.isDeer){ e.alert = true; e.lastSeenX = player.position.x; e.lastSeenZ = player.position.z; e.lastSeenTime = 0; }
+  e.alert = true; e.lastSeenX = player.position.x; e.lastSeenZ = player.position.z; e.lastSeenTime = 0;
   SFX.hit(); showHitmarker();
   if (e.hp <= 0) killEnemy(e);
 }
 function killEnemy(e){
   if (e.isBoss){
-    score += 250 + wave*50; gold += 100;
-    SFX.bossDie();
+    score += 250 + wave*50; gold += 100; SFX.bossDie();
     for (let k = 0; k < 8; k++) spawnLoot(e.mesh.position.x + (Math.random()-0.5)*3, e.mesh.position.z + (Math.random()-0.5)*3, 'coin');
     spawnLoot(e.mesh.position.x, e.mesh.position.z, 'health');
     spawnLoot(e.mesh.position.x + 2, e.mesh.position.z, 'weapon:rifle');
     boss = null; updateBossBar();
   } else if (e.isBear){
-    score += 80 + wave*10; gold += 30;
-    SFX.death();
+    score += 80 + wave*10; gold += 30; SFX.death();
     spawnLoot(e.mesh.position.x, e.mesh.position.z, 'health');
     spawnLoot(e.mesh.position.x + 1, e.mesh.position.z, 'coin');
-  } else if (e.isWolf){
-    score += 30 + wave*5; gold += 12;
-    SFX.death();
-    if (Math.random() < 0.4) spawnLoot(e.mesh.position.x, e.mesh.position.z, 'coin');
-  } else if (e.isDeer){
-    score += 20; gold += 15;
-    SFX.death();
-    spawnLoot(e.mesh.position.x, e.mesh.position.z, 'coin');
-    spawnLoot(e.mesh.position.x + 1, e.mesh.position.z, 'coin');
+    spawnLoot(e.mesh.position.x - 1, e.mesh.position.z, 'coin');
   } else {
-    score += 15 + wave; gold += 8;
-    SFX.death();
+    score += 15 + wave; gold += 8; SFX.death();
     const r = Math.random();
     if (r < 0.12) spawnLoot(e.mesh.position.x, e.mesh.position.z, 'health');
     else if (r < 0.22) spawnLoot(e.mesh.position.x, e.mesh.position.z, 'weapon:' + (Math.random()<0.5?'shotgun':'rifle'));
@@ -798,6 +713,274 @@ function killEnemy(e){
   scene.remove(e.mesh);
   enemies = enemies.filter(x => x !== e);
   updateHUD();
+}
+
+// ============ INSTANCED ANIMALS (ciervos + lobos) ============
+const instancedSystems = {};
+function createInstancedSystem(name, parts, count){
+  const instancedParts = parts.map(p => {
+    const im = new THREE.InstancedMesh(p.geo, p.mat, count);
+    im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    im.castShadow = !isTouch;
+    im.userData.sysName = name;
+    im.userData.offset = p.offset;
+    scene.add(im);
+    return { mesh: im, offset: p.offset };
+  });
+  const data = Array.from({ length: count }, () => ({
+    alive: false, x: 0, z: 0, yaw: 0, hp: 0, maxHp: 0,
+    baseY: 0, wanderAng: 0, wanderTimer: 0, meleeCd: 0, lastBite: 0, strafeDir: 1
+  }));
+  const dummy = new THREE.Object3D();
+  const tmpM = new THREE.Matrix4();
+  instancedSystems[name] = { name, instancedParts, data, count, dummy, tmpM };
+  // Inicializar todas como invisibles
+  for (let i = 0; i < count; i++){
+    dummy.position.set(0, -1000, 0);
+    dummy.scale.set(0, 0, 0);
+    dummy.updateMatrix();
+    for (const part of instancedParts) part.mesh.setMatrixAt(i, dummy.matrix);
+  }
+  for (const part of instancedParts) part.mesh.instanceMatrix.needsUpdate = true;
+  return instancedSystems[name];
+}
+
+function initInstancedSystems(){
+  // Ciervo: cuerpo + cabeza
+  const deerParts = [
+    { geo: new THREE.BoxGeometry(1.2, 0.7, 0.6), mat: new THREE.MeshLambertMaterial({ color: 0x8b5a2b }), offset: { x: 0, y: 0.8, z: 0 } },
+    { geo: new THREE.BoxGeometry(0.4, 0.4, 0.4), mat: new THREE.MeshLambertMaterial({ color: 0x8b5a2b }), offset: { x: 0.65, y: 1.3, z: 0 } },
+    { geo: new THREE.CylinderGeometry(0.06, 0.06, 0.6, 6), mat: new THREE.MeshLambertMaterial({ color: 0x3a1f0a }), offset: { x: 0.55, y: 1.65, z: 0.1 } },
+    { geo: new THREE.CylinderGeometry(0.06, 0.06, 0.6, 6), mat: new THREE.MeshLambertMaterial({ color: 0x3a1f0a }), offset: { x: 0.55, y: 1.65, z: -0.1 } },
+  ];
+  createInstancedSystem('deer', deerParts, DEER_COUNT);
+
+  // Lobo: cuerpo + cabeza + hocico
+  const wolfParts = [
+    { geo: new THREE.BoxGeometry(1.4, 0.6, 0.5), mat: new THREE.MeshLambertMaterial({ color: 0x555555 }), offset: { x: 0, y: 0.65, z: 0 } },
+    { geo: new THREE.BoxGeometry(0.4, 0.4, 0.4), mat: new THREE.MeshLambertMaterial({ color: 0x555555 }), offset: { x: 0.75, y: 0.85, z: 0 } },
+    { geo: new THREE.ConeGeometry(0.12, 0.3, 6), mat: new THREE.MeshLambertMaterial({ color: 0x555555 }), offset: { x: 1.05, y: 0.8, z: 0 }, rotZ: -Math.PI/2 },
+    { geo: new THREE.ConeGeometry(0.08, 0.15, 4), mat: new THREE.MeshLambertMaterial({ color: 0x222222 }), offset: { x: 0.65, y: 1.15, z: 0.12 } },
+    { geo: new THREE.ConeGeometry(0.08, 0.15, 4), mat: new THREE.MeshLambertMaterial({ color: 0x222222 }), offset: { x: 0.65, y: 1.15, z: -0.12 } },
+  ];
+  createInstancedSystem('wolf', wolfParts, WOLF_COUNT);
+}
+
+function spawnInstanced(name, x, z, hp){
+  const sys = instancedSystems[name];
+  if (!sys) return -1;
+  for (let i = 0; i < sys.count; i++){
+    if (!sys.data[i].alive){
+      const d = sys.data[i];
+      d.alive = true; d.x = x; d.z = z;
+      d.yaw = Math.random() * Math.PI * 2;
+      d.hp = hp; d.maxHp = hp;
+      d.wanderAng = Math.random() * Math.PI * 2;
+      d.wanderTimer = 0; d.lastBite = 0;
+      updateInstanceMatrix(sys, i);
+      return i;
+    }
+  }
+  return -1;
+}
+
+function updateInstanceMatrix(sys, i){
+  const d = sys.data[i];
+  const dummy = sys.dummy;
+  dummy.position.set(d.x, d.baseY || 0, d.z);
+  dummy.rotation.set(0, d.yaw, 0);
+  const s = d.alive ? 1 : 0;
+  dummy.scale.set(s, s, s);
+  dummy.updateMatrix();
+  for (const part of sys.instancedParts){
+    const mat = dummy.matrix.clone();
+    const off = new THREE.Matrix4().makeTranslation(part.offset.x, part.offset.y, part.offset.z);
+    mat.multiply(off);
+    part.mesh.setMatrixAt(i, mat);
+  }
+}
+
+function commitInstanced(sys){
+  for (const part of sys.instancedParts) part.mesh.instanceMatrix.needsUpdate = true;
+}
+
+function updateInstancedAI(dt){
+  // Ciervos: huir si jugador cerca
+  const deerSys = instancedSystems.deer;
+  if (deerSys){
+    for (let i = 0; i < deerSys.count; i++){
+      const d = deerSys.data[i];
+      if (!d.alive) continue;
+      const dx = player.position.x - d.x, dz = player.position.z - d.z;
+      const dd = Math.hypot(dx, dz);
+      if (dd < 15){
+        // Huir
+        d.yaw = Math.atan2(-dx, -dz);
+        d.x -= (dx/dd) * 5 * dt;
+        d.z -= (dz/dd) * 5 * dt;
+      } else {
+        // Vagar
+        d.wanderTimer -= dt;
+        if (d.wanderTimer <= 0){ d.wanderTimer = 2 + Math.random()*3; d.wanderAng = Math.random()*Math.PI*2; }
+        d.yaw = Math.atan2(-Math.cos(d.wanderAng), -Math.sin(d.wanderAng));
+        d.x += Math.cos(d.wanderAng) * 0.8 * dt;
+        d.z += Math.sin(d.wanderAng) * 0.8 * dt;
+      }
+      // Mantener dentro del mapa
+      d.x = Math.max(-BOUND+3, Math.min(BOUND-3, d.x));
+      d.z = Math.max(-BOUND+3, Math.min(BOUND-3, d.z));
+      updateInstanceMatrix(deerSys, i);
+    }
+    commitInstanced(deerSys);
+  }
+
+  // Lobos: perseguir en jauría y morder
+  const wolfSys = instancedSystems.wolf;
+  if (wolfSys){
+    for (let i = 0; i < wolfSys.count; i++){
+      const d = wolfSys.data[i];
+      if (!d.alive) continue;
+      const dx = player.position.x - d.x, dz = player.position.z - d.z;
+      const dd = Math.hypot(dx, dz);
+      if (dd < 18){
+        // Perseguir
+        d.yaw = Math.atan2(-dx, -dz);
+        if (dd > 1.8){
+          d.x += (dx/dd) * 5 * dt;
+          d.z += (dz/dd) * 5 * dt;
+        } else {
+          // Mordisco
+          d.lastBite += dt;
+          if (d.lastBite >= 0.9){
+            d.lastBite = 0;
+            player.hp -= 8;
+            SFX.hit();
+            updateHUD();
+            if (player.hp <= 0){ gameOver = true; SFX.gameover(); showGameOver(); return; }
+          }
+        }
+      } else {
+        d.wanderTimer -= dt;
+        if (d.wanderTimer <= 0){ d.wanderTimer = 1.5 + Math.random()*2.5; d.wanderAng = Math.random()*Math.PI*2; }
+        d.yaw = Math.atan2(-Math.cos(d.wanderAng), -Math.sin(d.wanderAng));
+        d.x += Math.cos(d.wanderAng) * 1.2 * dt;
+        d.z += Math.sin(d.wanderAng) * 1.2 * dt;
+      }
+      d.x = Math.max(-BOUND+3, Math.min(BOUND-3, d.x));
+      d.z = Math.max(-BOUND+3, Math.min(BOUND-3, d.z));
+      updateInstanceMatrix(wolfSys, i);
+    }
+    commitInstanced(wolfSys);
+  }
+}
+
+// Dañar una instancia
+function damageInstanced(sysName, index, dmg){
+  const sys = instancedSystems[sysName];
+  if (!sys) return;
+  const d = sys.data[index];
+  if (!d || !d.alive) return;
+  d.hp -= dmg;
+  SFX.hit(); showHitmarker();
+  if (d.hp <= 0){
+    d.alive = false;
+    updateInstanceMatrix(sys, index);
+    commitInstanced(sys);
+    // Loot
+    if (sysName === 'wolf'){ score += 30 + wave*5; gold += 12; spawnLoot(d.x, d.z, 'coin'); }
+    else if (sysName === 'deer'){ score += 20; gold += 15; spawnLoot(d.x, d.z, 'coin'); spawnLoot(d.x + 1, d.z, 'coin'); }
+    updateHUD();
+  } else {
+    updateInstanceMatrix(sys, index);
+    commitInstanced(sys);
+  }
+}
+
+// ============ DRAGONS ============
+let dragons = [];
+let dragonFireballs = [];
+function spawnDragons(){
+  for (let i = 0; i < DRAGON_COUNT; i++){
+    const mesh = glbCache.dragon
+      ? glbCache.dragon.clone()
+      : createDragonMesh();
+    if (glbCache.dragon) mesh.scale.set(1.5, 1.5, 1.5);
+    mesh.position.set(
+      -BOUND + 40 + Math.random() * (WORLD_SIZE - 80),
+      22 + Math.random() * 8,
+      -BOUND + 40 + Math.random() * (WORLD_SIZE - 80)
+    );
+    mesh.castShadow = true;
+    scene.add(mesh);
+    const dg = { mesh, angle: Math.random() * Math.PI * 2, fireCd: 3 + Math.random()*2 };
+    mesh.userData.dragonRef = dg;
+    dragons.push(dg);
+  }
+  SFX.dragon();
+}
+function updateDragons(dt){
+  for (const dg of dragons){
+    dg.angle += dt * 0.4;
+    dg.mesh.position.x += Math.cos(dg.angle) * 3 * dt;
+    dg.mesh.position.z += Math.sin(dg.angle) * 3 * dt;
+    dg.mesh.rotation.y = -dg.angle;
+    // Mantener dentro del mapa
+    const b = BOUND - 20;
+    dg.mesh.position.x = Math.max(-b, Math.min(b, dg.mesh.position.x));
+    dg.mesh.position.z = Math.max(-b, Math.min(b, dg.mesh.position.z));
+    // Fuego si el jugador está cerca
+    dg.fireCd -= dt;
+    const dx = player.position.x - dg.mesh.position.x;
+    const dz = player.position.z - dg.mesh.position.z;
+    const dd = Math.hypot(dx, dz);
+    if (dd < 25 && dg.fireCd <= 0){
+      dg.fireCd = 2.5 + Math.random()*1.5;
+      SFX.fire();
+      // Lanzar una bola de fuego que cae
+      const fb = new THREE.Mesh(
+        new THREE.SphereGeometry(0.7, 8, 8),
+        new THREE.MeshBasicMaterial({ color: 0xff5500 })
+      );
+      fb.position.copy(dg.mesh.position);
+      scene.add(fb);
+      dragonFireballs.push({
+        mesh: fb,
+        vx: dx / dd * 10,
+        vy: -8,
+        vz: dz / dd * 10,
+        targetX: player.position.x,
+        targetZ: player.position.z,
+        life: 4
+      });
+    }
+  }
+  // Actualizar bolas de fuego
+  for (let i = dragonFireballs.length-1; i >= 0; i--){
+    const fb = dragonFireballs[i];
+    fb.mesh.position.x += fb.vx * dt;
+    fb.mesh.position.y += fb.vy * dt;
+    fb.mesh.position.z += fb.vz * dt;
+    fb.vy -= 15 * dt; // gravedad
+    fb.life -= dt;
+    // Colisión con jugador
+    const dx = fb.mesh.position.x - player.position.x;
+    const dy = fb.mesh.position.y - 1.2;
+    const dz = fb.mesh.position.z - player.position.z;
+    if (dx*dx + dy*dy + dz*dz < 1.5*1.5){
+      player.hp -= 25;
+      SFX.hit();
+      showMsg('¡Dragón te quemó! -25');
+      updateHUD();
+      scene.remove(fb.mesh);
+      dragonFireballs.splice(i, 1);
+      if (player.hp <= 0){ gameOver = true; SFX.gameover(); showGameOver(); return; }
+      continue;
+    }
+    if (fb.life <= 0 || fb.mesh.position.y < 0){
+      scene.remove(fb.mesh);
+      dragonFireballs.splice(i, 1);
+    }
+  }
 }
 
 // ============ PROJECTILES / LOOT ============
@@ -832,7 +1015,7 @@ function spawnLoot(x, z, type){
   loot.push({ mesh, type, life: 30, phase: Math.random()*Math.PI*2 });
 }
 
-// ============ COLLISION / VISION ============
+// ============ COLLISION ============
 function checkCollision(x, z, radius){
   for (const box of wallBoxes){
     const cx = Math.max(box.min.x, Math.min(x, box.max.x));
@@ -848,6 +1031,8 @@ function checkCollision(x, z, radius){
   }
   return false;
 }
+
+// ============ VISION ============
 function enemySeesPlayer(e){
   const px = player.position.x, pz = player.position.z;
   const ex = e.mesh.position.x, ez = e.mesh.position.z;
@@ -862,7 +1047,8 @@ function enemySeesPlayer(e){
   const origin = new THREE.Vector3(ex, 1.5, ez);
   const dir = new THREE.Vector3(dx/dist, 0, dz/dist);
   const ray = new THREE.Raycaster(origin, dir, 0, dist);
-  return ray.intersectObjects(wallMeshes, false).length === 0;
+  const hits = ray.intersectObjects(wallMeshes, false);
+  return hits.length === 0;
 }
 
 // ============ WORLD GEN ============
@@ -873,6 +1059,7 @@ function generateWorld(){
   buildings.length = 0; hostageObjects.length = 0;
   treeData.length = 0;
 
+  // Edificios
   for (let i = 0; i < 6; i++){
     for (let t = 0; t < 30; t++){
       const bw = 12 + Math.random()*8;
@@ -885,7 +1072,6 @@ function generateWorld(){
         if (bx < b.x + b.w + 5 && bx + bw + 5 > b.x && bz < b.z + b.d + 5 && bz + bd + 5 > b.z){ ok = false; break; }
       }
       if (!ok) continue;
-
       const wallH = 4, wallT = 0.5;
       const cx = bx + bw/2, cz = bz + bd/2, doorW = 3;
       addWallMesh(cx, wallH/2, bz, bw, wallH, wallT, woodMat);
@@ -893,10 +1079,8 @@ function generateWorld(){
       addWallMesh(bx + bw - (bw - doorW)/4, wallH/2, bz + bd, (bw - doorW)/2, wallH, wallT, woodMat);
       addWallMesh(bx + bw, wallH/2, cz, wallT, wallH, bd, woodMat);
       addWallMesh(bx, wallH/2, cz, wallT, wallH, bd, woodMat);
-
       const roof = new THREE.Mesh(new THREE.BoxGeometry(bw + 0.6, 0.3, bd + 0.6), roofMat);
       roof.position.set(cx, wallH + 0.15, cz); roof.castShadow = true; scene.add(roof);
-
       const building = { x:bx, z:bz, w:bw, d:bd, door:{ x:cx, z:bz+bd, w:doorW } };
       if (Math.random() < 0.7){
         const hx = bx + 2 + Math.random()*(bw - 4);
@@ -909,10 +1093,10 @@ function generateWorld(){
         building.hostage = hostage;
         hostageObjects.push(hostage);
       }
-      buildings.push(building);
-      break;
+      buildings.push(building); break;
     }
   }
+  // Cajas
   for (let i = 0; i < 20; i++){
     for (let t = 0; t < 20; t++){
       const w = 2 + Math.random()*3, h = 2 + Math.random()*3, d = 2 + Math.random()*3;
@@ -928,14 +1112,14 @@ function generateWorld(){
       break;
     }
   }
-  for (let i = 0; i < 30; i++){
+  // Árboles
+  for (let i = 0; i < 60; i++){
     for (let t = 0; t < 30; t++){
       const x = -BOUND + 5 + Math.random()*(WORLD_SIZE - 10);
       const z = -BOUND + 5 + Math.random()*(WORLD_SIZE - 10);
       if (x > -15 && x < 15 && z > -15 && z < 15) continue;
       if (checkCollision(x, z, 2)) continue;
-      addTree(x, z);
-      break;
+      addTree(x, z); break;
     }
   }
 }
@@ -953,19 +1137,14 @@ function cycleWeapon(dir){
     idx = (idx + dir + WEAPONS_ORDER.length) % WEAPONS_ORDER.length;
     const w = WEAPONS_ORDER[idx];
     if (w === 'pistol' || player.ammo[w] > 0){
-      player.weapon = w;
-      updatePlayerWeaponMesh(); updateHUD();
-      return;
+      player.weapon = w; updatePlayerWeaponMesh(); updateHUD(); return;
     }
   }
 }
 function selectWeapon(w){
   if (w === 'pistol' || player.ammo[w] > 0){
-    player.weapon = w;
-    updatePlayerWeaponMesh(); updateHUD();
-  } else {
-    showMsg('No tienes ' + WEAPONS[w].name);
-  }
+    player.weapon = w; updatePlayerWeaponMesh(); updateHUD();
+  } else showMsg('No tienes ' + WEAPONS[w].name);
 }
 
 document.addEventListener('keydown', e => {
@@ -977,7 +1156,6 @@ document.addEventListener('keydown', e => {
   else if (k === '2') selectWeapon('shotgun');
   else if (k === '3') selectWeapon('rifle');
   else if (k === 'b') toggleShop();
-  else if (k === 'm') toggleMP();
 });
 document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
 
@@ -1005,9 +1183,7 @@ document.addEventListener('mousemove', e => {
 document.addEventListener('mousedown', e => {
   if (e.button === 0 && running && !gameOver && e.target === renderer.domElement) mouse.down = true;
 });
-document.addEventListener('mouseup', e => {
-  if (e.button === 0) mouse.down = false;
-});
+document.addEventListener('mouseup', e => { if (e.button === 0) mouse.down = false; });
 addEventListener('blur', () => { mouse.down = false; for (const k in keys) keys[k] = false; });
 
 // ============ SHOOTING ============
@@ -1017,8 +1193,15 @@ function shootOnce(){
   const camDir = new THREE.Vector3();
   camera.getWorldDirection(camDir);
   const camOrigin = camera.position.clone();
+
+  // Recolectar TODOS los targets (muros, enemigos, dragones, instancias)
+  const targets = wallMeshes.slice().concat(enemies.map(e => e.mesh));
+  for (const dg of dragons) targets.push(dg.mesh);
+  for (const sysName in instancedSystems){
+    for (const part of instancedSystems[sysName].instancedParts) targets.push(part.mesh);
+  }
+
   const camRay = new THREE.Raycaster(camOrigin, camDir, 0.1, 200);
-  const targets = wallMeshes.concat(enemies.map(e => e.mesh));
   const camHits = camRay.intersectObjects(targets, true);
   let aimPoint = camHits.length > 0 ? camHits[0].point.clone()
     : camOrigin.clone().add(camDir.clone().multiplyScalar(100));
@@ -1031,32 +1214,45 @@ function shootOnce(){
     dir.y += (Math.random()-0.5) * w.spread * 2;
     dir.z += (Math.random()-0.5) * w.spread * 2;
     dir.normalize();
-    raycaster.set(weaponOrigin, dir); raycaster.far = w.range;
+    raycaster.set(weaponOrigin, dir);
+    raycaster.far = w.range;
     const hits = raycaster.intersectObjects(targets, true);
     let endPoint = weaponOrigin.clone().add(dir.clone().multiplyScalar(w.range));
     if (hits.length > 0){
       endPoint = hits[0].point.clone();
-      let obj = hits[0].object;
-      while (obj && !obj.userData.enemyRef) obj = obj.parent;
-      if (obj && obj.userData.enemyRef) damageEnemy(obj.userData.enemyRef, w.damage);
+      const obj = hits[0].object;
+      // Enemigo normal
+      let parent = obj;
+      while (parent && !parent.userData.enemyRef) parent = parent.parent;
+      if (parent && parent.userData.enemyRef){
+        damageEnemy(parent.userData.enemyRef, w.damage);
+      } else if (obj.userData.sysName !== undefined && hits[0].instanceId !== undefined){
+        // Instancia
+        damageInstanced(obj.userData.sysName, hits[0].instanceId, w.damage);
+      } else if (obj.userData.dragonRef){
+        // Dragón (no recibe daño por ahora)
+        SFX.hit();
+      }
     }
     spawnTracer(weaponOrigin, endPoint);
   }
+
   player.recoil = Math.min(player.recoil + 0.08, 0.15);
   spawnMuzzleFlash(weaponOrigin.clone().add(aimDir.clone().multiplyScalar(0.6)));
+
   if (player.weapon === 'shotgun') SFX.shotgun();
   else if (player.weapon === 'rifle') SFX.rifle();
   else SFX.shoot();
+
   if (player.ammo[player.weapon] !== Infinity){
     player.ammo[player.weapon]--;
-    if (player.ammo[player.weapon] <= 0){
-      player.weapon = 'pistol';
-      updatePlayerWeaponMesh();
-    }
+    if (player.ammo[player.weapon] <= 0) player.weapon = 'pistol';
+    updatePlayerWeaponMesh();
     updateHUD();
   }
+
+  // Alertar enemigos humanos
   for (const e of enemies){
-    if (e.isDeer) continue;
     const dx = e.mesh.position.x - player.position.x;
     const dz = e.mesh.position.z - player.position.z;
     if (dx*dx + dz*dz < 30*30){
@@ -1094,8 +1290,7 @@ function tryFreeHostage(){
       score += 75; gold += 30;
       spawnLoot(h.x, h.z, 'health');
       spawnLoot(h.x + 1, h.z, 'weapon:shotgun');
-      SFX.hostage(); showMsg('¡Rehén liberado! +75');
-      updateHUD();
+      SFX.hostage(); showMsg('¡Rehén liberado! +75'); updateHUD();
       return;
     }
   }
@@ -1134,24 +1329,12 @@ function showMsg(text){
 
 // ============ SHOP ============
 const SHOP_ITEMS = [
-  { id:'health', name:'Vida +50', desc:'Recupera 50 HP', price:25, apply:()=>{
-    player.hp = Math.min(player.maxHp, player.hp + 50);
-  }},
-  { id:'shotgun', name:'Escopeta', desc:'Arma con 24 balas', price:80, apply:()=>{
-    player.ammo.shotgun = 24; player.weapon = 'shotgun'; updatePlayerWeaponMesh();
-  }},
-  { id:'rifle', name:'Rifle', desc:'Arma con 100 balas', price:120, apply:()=>{
-    player.ammo.rifle = 100; player.weapon = 'rifle'; updatePlayerWeaponMesh();
-  }},
-  { id:'ammoShotgun', name:'+24 balas escopeta', desc:'Recarga escopeta', price:35, apply:()=>{
-    player.ammo.shotgun += 24;
-  }, canBuy:()=>player.ammo.shotgun >= 0},
-  { id:'ammoRifle', name:'+50 balas rifle', desc:'Recarga rifle', price:40, apply:()=>{
-    player.ammo.rifle += 50;
-  }},
-  { id:'maxhp', name:'Vida máxima +25', desc:'Aumenta HP máximo', price:100, apply:()=>{
-    player.maxHp += 25; player.hp += 25;
-  }}
+  { id:'health', name:'Vida +50', desc:'Recupera 50 HP', price:25, apply:()=>{ player.hp = Math.min(player.maxHp, player.hp + 50); }},
+  { id:'shotgun', name:'Escopeta', desc:'Arma con 24 balas', price:80, apply:()=>{ player.ammo.shotgun = 24; player.weapon = 'shotgun'; updatePlayerWeaponMesh(); }},
+  { id:'rifle', name:'Rifle', desc:'Arma con 100 balas', price:120, apply:()=>{ player.ammo.rifle = 100; player.weapon = 'rifle'; updatePlayerWeaponMesh(); }},
+  { id:'ammoShotgun', name:'+24 balas escopeta', desc:'Recarga escopeta', price:35, apply:()=>{ player.ammo.shotgun += 24; }},
+  { id:'ammoRifle', name:'+50 balas rifle', desc:'Recarga rifle', price:40, apply:()=>{ player.ammo.rifle += 50; }},
+  { id:'maxhp', name:'Vida máxima +25', desc:'Aumenta HP máximo', price:100, apply:()=>{ player.maxHp += 25; player.hp += 25; }}
 ];
 function toggleShop(){
   const m = document.getElementById('shop-modal');
@@ -1174,9 +1357,7 @@ function renderShop(){
       if (gold < item.price) return;
       gold -= item.price;
       item.apply();
-      SFX.pickup();
-      updateHUD();
-      renderShop();
+      SFX.pickup(); updateHUD(); renderShop();
     };
     div.appendChild(btn);
     cont.appendChild(div);
@@ -1184,74 +1365,7 @@ function renderShop(){
 }
 document.getElementById('shop-close').onclick = () => document.getElementById('shop-modal').classList.remove('show');
 
-// ============ MULTIPLAYER (PeerJS básico) ============
-let peer = null;
-let remotePeers = {};
-let mpActive = false;
-function toggleMP(){
-  const m = document.getElementById('mp-modal');
-  m.classList.toggle('show');
-}
-document.getElementById('mp-close').onclick = () => document.getElementById('mp-modal').classList.remove('show');
-function mpStatus(txt){ document.getElementById('mp-status').textContent = txt; }
-
-function initPeer(customId){
-  if (peer) { try{ peer.destroy(); }catch(e){} }
-  peer = customId ? new Peer(customId) : new Peer();
-  peer.on('open', id => {
-    if (customId) mpStatus('Sala creada: ' + customId);
-    else mpStatus('Conectado como ' + id);
-  });
-  peer.on('error', err => mpStatus('Error: ' + err.type));
-  peer.on('connection', conn => setupConn(conn));
-  peer.on('disconnected', () => mpStatus('Desconectado'));
-}
-function setupConn(conn){
-  remotePeers[conn.peer] = { conn, mesh: null };
-  conn.on('open', () => mpStatus('Conectado a ' + conn.peer));
-  conn.on('data', data => {
-    if (data.type === 'pos' && running){
-      let rp = remotePeers[conn.peer];
-      if (!rp) rp = remotePeers[conn.peer] = { conn, mesh: null };
-      if (!rp.mesh){
-        rp.mesh = createHumanoid(0x00ccff, 0xf0c090, 1);
-        scene.add(rp.mesh);
-      }
-      rp.mesh.position.set(data.x, 0, data.z);
-      rp.mesh.rotation.y = data.yaw;
-    }
-  });
-  conn.on('close', () => {
-    if (remotePeers[conn.peer]?.mesh) scene.remove(remotePeers[conn.peer].mesh);
-    delete remotePeers[conn.peer];
-  });
-}
-document.getElementById('mp-host').onclick = () => {
-  const code = (document.getElementById('mp-room').value || 'GAME').toUpperCase().slice(0,6);
-  initPeer('lootshooter-' + code);
-  mpActive = true;
-};
-document.getElementById('mp-join').onclick = () => {
-  const code = (document.getElementById('mp-room').value || '').toUpperCase().slice(0,6);
-  if (!code){ mpStatus('Escribe un código'); return; }
-  initPeer();
-  setTimeout(() => {
-    const conn = peer.connect('lootshooter-' + code);
-    setupConn(conn);
-    mpActive = true;
-  }, 1000);
-};
-setInterval(() => {
-  if (!mpActive || !running) return;
-  for (const peerId in remotePeers){
-    const c = remotePeers[peerId].conn;
-    if (c && c.open){
-      c.send({ type:'pos', x: player.position.x, z: player.position.z, yaw });
-    }
-  }
-}, 100);
-
-// ============ MOBILE TOUCH ============
+// ============ MOBILE ============
 let moveTouch = null;
 const jsBase = document.getElementById('joystick-base');
 const jsKnob = document.getElementById('joystick-knob');
@@ -1259,8 +1373,6 @@ const jsKnob = document.getElementById('joystick-knob');
 if (isTouch){
   document.getElementById('mobile-ui').classList.add('active');
   document.getElementById('crosshair').classList.add('active');
-  const overlayP = document.querySelector('#overlay .keys');
-  if (overlayP) overlayP.innerHTML = '<div>Joystick izquierdo: mover</div><div>Arrastra derecha: mirar</div><div>Botones: disparar, cambiar arma, tienda</div>';
 
   document.addEventListener('touchstart', e => {
     if (!running || gameOver) return;
@@ -1344,12 +1456,421 @@ if (isTouch){
   document.getElementById('m-shop').addEventListener('touchstart', e => { e.preventDefault(); toggleShop(); }, { passive: false });
 }
 
-// ============ RESET ============
+// ============ SUPABASE MULTIPLAYER ============
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const myPlayerId = Math.random().toString(36).substring(2, 10);
+let myPlayerName = 'Jugador';
+let mpChannel = null;
+const remotePlayers = {};
+
+async function connectMultiplayer(){
+  try {
+    mpChannel = supabase.channel('loot-shooter-global', {
+      config: { broadcast: { self: true }, presence: { key: myPlayerId } }
+    });
+
+    mpChannel.on('broadcast', { event: 'move' }, ({ payload }) => {
+      if (payload.id === myPlayerId) return;
+      let rp = remotePlayers[payload.id];
+      if (!rp){
+        const mesh = glbCache.avatar ? glbCache.avatar.clone() : createHumanoid(0x00ccff, 0xf0c090, 1);
+        mesh.position.set(payload.x, 0, payload.z);
+        mesh.traverse(c => { if (c.isMesh) c.castShadow = true; });
+        scene.add(mesh);
+        const label = createMarker(payload.name || 'P', 0x00ccff);
+        label.scale.set(1.6, 0.4, 1);
+        label.position.y = 2.5;
+        mesh.add(label);
+        remotePlayers[payload.id] = { mesh, name: payload.name };
+      }
+      rp.mesh.position.set(payload.x, 0, payload.z);
+      rp.mesh.rotation.y = payload.yaw;
+    });
+
+    mpChannel.on('presence', { event: 'sync' }, () => {
+      const state = mpChannel.presenceState();
+      const count = Object.keys(state).length;
+      document.getElementById('mp-online').textContent = count;
+    });
+
+    await mpChannel.subscribe(async (status) => {
+      if (status === 'SUBSCRIBED'){
+        await mpChannel.track({ name: myPlayerName, at: Date.now() });
+        console.log('Supabase Realtime conectado');
+      }
+    });
+
+    setInterval(() => {
+      if (mpChannel && running && !gameOver){
+        mpChannel.send({
+          type: 'broadcast',
+          event: 'move',
+          payload: { id: myPlayerId, name: myPlayerName, x: player.position.x, z: player.position.z, yaw }
+        });
+      }
+    }, 100);
+  } catch(e){
+    console.warn('Multiplayer error:', e);
+    document.getElementById('mp-online').textContent = 'offline';
+  }
+}
+
+// ============ GAME STATE / RESET ============
+function randomFreePos(minDist){
+  for (let t = 0; t < 40; t++){
+    const ang = Math.random()*Math.PI*2;
+    const d = minDist + Math.random()*40;
+    const x = Math.cos(ang)*d;
+    const z = Math.sin(ang)*d;
+    if (Math.abs(x) > BOUND-5 || Math.abs(z) > BOUND-5) continue;
+    if (checkCollision(x, z, 1.5)) continue;
+    return { x, z };
+  }
+  return { x: BOUND*0.7, z: BOUND*0.7 };
+}
+function spawnEnemyRandom(){ const p = randomFreePos(20); spawnEnemy(p.x, p.z); }
+function spawnBearRandom(){ const p = randomFreePos(30); spawnBear(p.x, p.z); }
+function spawnWavePickups(){
+  const p1 = randomFreePos(8);
+  spawnLoot(p1.x, p1.z, 'weapon:' + (Math.random()<0.5?'shotgun':'rifle'));
+  const p2 = randomFreePos(8);
+  spawnLoot(p2.x, p2.z, 'health');
+}
+
 function reset(){
   for (const e of enemies) scene.remove(e.mesh);
   for (const l of loot) scene.remove(l.mesh);
   for (const p of enemyProjectiles) scene.remove(p.mesh);
-  enemies = []; loot = []; enemyProjectiles = [];
+  for (const fb of dragonFireballs) scene.remove(fb.mesh);
+  enemies = []; loot = []; enemyProjectiles = []; dragonFireballs = [];
   boss = null;
+
   generateWorld();
-  if (!grassMesh) createGrassField(isTouch ? 4000 : 8000
+  if (!grassMesh) createGrassField(isTouch ? 4000 : 8000);
+
+  // Reset instancias
+  for (const sysName in instancedSystems){
+    const sys = instancedSystems[sysName];
+    for (let i = 0; i < sys.count; i++) sys.data[i].alive = false;
+    commitInstanced(sys);
+  }
+
+  player.position.set(0, 0, 0);
+  player.hp = player.maxHp = 100;
+  player.lvl = 1;
+  player.weapon = 'pistol';
+  player.ammo = { pistol: Infinity, shotgun: 0, rifle: 0 };
+  player.recoil = 0;
+  yaw = 0; pitch = -0.05;
+  if (!playerMesh) buildPlayer();
+  playerMesh.position.copy(player.position);
+  updatePlayerWeaponMesh();
+
+  score = 0; gold = 0; wave = 1; waveTimer = 0; spawnTimer = 0; bearSpawnTimer = 0;
+  gameOver = false;
+
+  // Spawn inicial de instancias (ciervos y lobos)
+  for (let i = 0; i < DEER_COUNT; i++){
+    const p = randomFreePos(15);
+    spawnInstanced('deer', p.x, p.z, 25);
+  }
+  for (let i = 0; i < WOLF_COUNT; i++){
+    const p = randomFreePos(25);
+    spawnInstanced('wolf', p.x, p.z, 60);
+  }
+  // Enemigos humanos iniciales
+  for (let i = 0; i < 5; i++) spawnEnemyRandom();
+  // Dragones
+  if (dragons.length === 0) spawnDragons();
+  spawnWavePickups();
+
+  updateHUD(); updateBossBar();
+}
+
+// ============ UPDATE ============
+function update(dt, t){
+  if (grassMaterial && grassMaterial.userData.shader){
+    grassMaterial.userData.shader.uniforms.uTime.value = t;
+  }
+  if (!running || gameOver) return;
+
+  // Movimiento
+  const fwd = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
+  const right = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
+  const moveDir = new THREE.Vector3();
+  if (keys['w'] || keys['arrowup']) moveDir.add(fwd);
+  if (keys['s'] || keys['arrowdown']) moveDir.sub(fwd);
+  if (keys['d'] || keys['arrowright']) moveDir.add(right);
+  if (keys['a'] || keys['arrowleft']) moveDir.sub(right);
+  if (moveDir.lengthSq() > 0){
+    moveDir.normalize();
+    const dx = moveDir.x * PLAYER_SPEED * dt;
+    const dz = moveDir.z * PLAYER_SPEED * dt;
+    if (!checkCollision(player.position.x + dx, player.position.z, PLAYER_RADIUS)) player.position.x += dx;
+    if (!checkCollision(player.position.x, player.position.z + dz, PLAYER_RADIUS)) player.position.z += dz;
+    player.swayPhase += dt * 8;
+  }
+  playerMesh.position.copy(player.position);
+  playerMesh.rotation.y = yaw;
+  const swayX = Math.sin(player.swayPhase) * 0.01;
+  playerGunGroup.position.x = 0.28 + swayX;
+  player.recoil = Math.max(0, player.recoil - dt * 0.8);
+
+  // Disparo
+  lastShotTime += dt;
+  if (mouse.down && lastShotTime >= WEAPONS[player.weapon].cooldown && player.ammo[player.weapon] > 0){
+    lastShotTime = 0;
+    shootOnce();
+  }
+
+  // Cámara
+  const camDir = new THREE.Vector3(
+    -Math.sin(yaw) * Math.cos(pitch),
+     Math.sin(pitch),
+    -Math.cos(yaw) * Math.cos(pitch)
+  );
+  const shoulder = new THREE.Vector3(-Math.cos(yaw), 0, Math.sin(yaw)).multiplyScalar(0.7);
+  const camDist = 4.5;
+  const camPos = new THREE.Vector3(
+    player.position.x, player.position.y + 1.7 + player.recoil*0.5, player.position.z
+  ).add(camDir.clone().multiplyScalar(-camDist)).add(shoulder);
+  if (camPos.y < 0.5) camPos.y = 0.5;
+  camera.position.lerp(camPos, 1 - Math.pow(0.001, dt));
+  camera.lookAt(
+    new THREE.Vector3(
+      player.position.x, player.position.y + 1.7 + player.recoil*0.5, player.position.z
+    ).add(shoulder).add(camDir)
+  );
+
+  // Sol sigue
+  sun.position.set(player.position.x + 30, 60, player.position.z + 20);
+  sun.target.position.set(player.position.x, 0, player.position.z);
+  sun.target.updateMatrixWorld();
+
+  // Enemigos humanos, osos, jefes
+  for (const e of enemies){
+    const dx = player.position.x - e.mesh.position.x;
+    const dz = player.position.z - e.mesh.position.z;
+    const d = Math.hypot(dx, dz);
+    if (e.isBear){
+      if (d < 15){
+        e.alert = true;
+        e.lastSeenX = player.position.x; e.lastSeenZ = player.position.z; e.lastSeenTime = 0;
+        e.mesh.rotation.y = Math.atan2(-dx, -dz);
+        if (d > 1.8){
+          const nx = e.mesh.position.x + (dx/d) * e.speed * dt;
+          const nz = e.mesh.position.z + (dz/d) * e.speed * dt;
+          if (!checkCollision(nx, e.mesh.position.z, e.r)) e.mesh.position.x = nx;
+          if (!checkCollision(e.mesh.position.x, nz, e.r)) e.mesh.position.z = nz;
+        } else {
+          e.lastBite += dt;
+          if (e.lastBite >= e.meleeCd){
+            e.lastBite = 0;
+            player.hp -= 20;
+            SFX.hit(); showMsg('¡Oso te mordió! -20'); updateHUD();
+            if (player.hp <= 0){ gameOver = true; SFX.gameover(); showGameOver(); return; }
+          }
+        }
+      } else {
+        e.alert = false;
+        e.wanderTimer -= dt;
+        if (e.wanderTimer <= 0){ e.wanderTimer = 2 + Math.random()*3; e.wanderAng = Math.random()*Math.PI*2; }
+        e.mesh.rotation.y = Math.atan2(-Math.cos(e.wanderAng), -Math.sin(e.wanderAng));
+        const nx = e.mesh.position.x + Math.cos(e.wanderAng) * e.speed * 0.4 * dt;
+        const nz = e.mesh.position.z + Math.sin(e.wanderAng) * e.speed * 0.4 * dt;
+        if (!checkCollision(nx, e.mesh.position.z, e.r)) e.mesh.position.x = nx;
+        if (!checkCollision(e.mesh.position.x, nz, e.r)) e.mesh.position.z = nz;
+      }
+      continue;
+    }
+    const sees = enemySeesPlayer(e);
+    if (sees){
+      e.alert = true;
+      e.lastSeenX = player.position.x; e.lastSeenZ = player.position.z; e.lastSeenTime = 0;
+      e.mesh.rotation.y = Math.atan2(-dx, -dz);
+    } else e.lastSeenTime += dt;
+    if (e.alert && e.lastSeenTime < 6){
+      const tdx = e.lastSeenX - e.mesh.position.x;
+      const tdz = e.lastSeenZ - e.mesh.position.z;
+      const td = Math.hypot(tdx, tdz);
+      if (td > (e.isBoss ? 12 : 6)){
+        const nx = e.mesh.position.x + (tdx/td) * e.speed * dt;
+        const nz = e.mesh.position.z + (tdz/td) * e.speed * dt;
+        if (!checkCollision(nx, e.mesh.position.z, e.r)) e.mesh.position.x = nx;
+        if (!checkCollision(e.mesh.position.x, nz, e.r)) e.mesh.position.z = nz;
+        e.mesh.rotation.y = Math.atan2(-tdx, -tdz);
+      } else if (sees){
+        const perpAng = Math.atan2(tdz, tdx) + Math.PI/2 * e.strafeDir;
+        const nx = e.mesh.position.x + Math.cos(perpAng) * e.speed * 0.6 * dt;
+        const nz = e.mesh.position.z + Math.sin(perpAng) * e.speed * 0.6 * dt;
+        if (!checkCollision(nx, e.mesh.position.z, e.r)) e.mesh.position.x = nx;
+        if (!checkCollision(e.mesh.position.x, nz, e.r)) e.mesh.position.z = nz;
+        if (Math.random() < 0.01) e.strafeDir *= -1;
+      }
+      if (sees){
+        e.lastShot += dt;
+        if (e.lastShot >= e.shootCd){
+          e.lastShot = 0;
+          const origin = new THREE.Vector3(e.mesh.position.x, 1.3, e.mesh.position.z);
+          const dir = new THREE.Vector3(dx, 0, dz).normalize();
+          if (e.isBoss){
+            for (let k = -1; k <= 1; k++){
+              const ang = Math.atan2(dir.z, dir.x) + k*0.15;
+              spawnEnemyProjectile(origin, new THREE.Vector3(Math.cos(ang), 0, Math.sin(ang)), 14);
+            }
+          } else spawnEnemyProjectile(origin, dir, 10);
+          SFX.enemyShoot();
+        }
+      }
+    } else {
+      e.alert = false;
+      e.wanderTimer -= dt;
+      if (e.wanderTimer <= 0){ e.wanderTimer = 1.5 + Math.random()*2.5; e.wanderAng = Math.random()*Math.PI*2; }
+      e.mesh.rotation.y = Math.atan2(-Math.cos(e.wanderAng), -Math.sin(e.wanderAng));
+      const nx = e.mesh.position.x + Math.cos(e.wanderAng) * e.speed * 0.35 * dt;
+      const nz = e.mesh.position.z + Math.sin(e.wanderAng) * e.speed * 0.35 * dt;
+      if (!checkCollision(nx, e.mesh.position.z, e.r)) e.mesh.position.x = nx;
+      if (!checkCollision(e.mesh.position.x, nz, e.r)) e.mesh.position.z = nz;
+    }
+  }
+
+  // Instanced animals AI
+  updateInstancedAI(dt);
+  // Dragones
+  updateDragons(dt);
+
+  // Proyectiles enemigos
+  for (let i = enemyProjectiles.length-1; i >= 0; i--){
+    const p = enemyProjectiles[i];
+    p.mesh.position.addScaledVector(p.velocity, dt);
+    p.life -= dt;
+    const pdx = p.mesh.position.x - player.position.x;
+    const pdy = p.mesh.position.y - 1.2;
+    const pdz = p.mesh.position.z - player.position.z;
+    if (pdx*pdx + pdy*pdy + pdz*pdz < 0.6*0.6){
+      player.hp -= p.damage;
+      SFX.hit();
+      scene.remove(p.mesh);
+      enemyProjectiles.splice(i, 1);
+      updateHUD();
+      if (player.hp <= 0){ gameOver = true; SFX.gameover(); showGameOver(); return; }
+      continue;
+    }
+    if (p.life <= 0 || p.mesh.position.y < 0){
+      scene.remove(p.mesh);
+      enemyProjectiles.splice(i, 1);
+    }
+  }
+
+  // Loot
+  for (let i = loot.length-1; i >= 0; i--){
+    const l = loot[i];
+    l.life -= dt;
+    l.mesh.rotation.y += dt * 2;
+    l.mesh.position.y = 0.6 + Math.sin(t*3 + l.phase) * 0.15;
+    const ldx = l.mesh.position.x - player.position.x;
+    const ldz = l.mesh.position.z - player.position.z;
+    if (ldx*ldx + ldz*ldz < 1.6*1.6){
+      if (l.type === 'coin'){
+        score += 5; gold += 5;
+        if (score > 0 && score % 100 === 0 && player.lvl < 10){
+          player.lvl++; player.maxHp += 15;
+          player.hp = Math.min(player.maxHp, player.hp + 20);
+          showMsg('¡Subiste de nivel!');
+        }
+        SFX.pickup();
+      } else if (l.type === 'health'){
+        player.hp = Math.min(player.maxHp, player.hp + 40);
+        SFX.health(); showMsg('+40 Vida');
+      } else if (l.type.startsWith('weapon:')){
+        const wn = l.type.split(':')[1];
+        player.weapon = wn;
+        player.ammo[wn] = WEAPONS[wn].maxAmmo;
+        updatePlayerWeaponMesh();
+        SFX.pickup(); showMsg(WEAPONS[wn].name + ' equipada');
+      }
+      scene.remove(l.mesh);
+      loot.splice(i, 1);
+      updateHUD();
+      continue;
+    }
+    if (l.life <= 0){ scene.remove(l.mesh); loot.splice(i, 1); }
+  }
+
+  for (const h of hostageObjects){
+    if (h.freed) continue;
+    h.marker.position.y = 2.6 + Math.sin(t*3)*0.15;
+  }
+
+  // Oleadas
+  if (boss) updateBossBar();
+  spawnTimer += dt;
+  const normalCount = enemies.filter(e => !e.isBoss && !e.isBear).length;
+  const maxEnemies = Math.min(10, 5 + Math.floor(wave/2));
+  if (spawnTimer > 3 && normalCount < maxEnemies){ spawnTimer = 0; spawnEnemyRandom(); }
+
+  bearSpawnTimer += dt;
+  const bearCount = enemies.filter(e => e.isBear).length;
+  if (bearSpawnTimer > 20 && bearCount < 2 && wave >= 2){ bearSpawnTimer = 0; spawnBearRandom(); }
+
+  waveTimer += dt;
+  if (waveTimer > 40){
+    waveTimer = 0; wave++; updateHUD(); spawnWavePickups();
+    if (BOSS_WAVES.includes(wave) && !boss){
+      const p = randomFreePos(25); spawnBoss(p.x, p.z);
+    }
+    if (BEAR_WAVES.includes(wave)) spawnBearRandom();
+  }
+}
+
+// ============ GAME OVER / START ============
+function showGameOver(){
+  document.exitPointerLock();
+  const ov = document.getElementById('overlay');
+  ov.innerHTML = `
+    <h1 style="color:#e74c3c">GAME OVER</h1>
+    <p>Puntuación: <b style="color:#ffcc00">${score}</b></p>
+    <p>Oro: <b style="color:#ffcc00">${gold}</b> 🟡</p>
+    <p>Oleada alcanzada: <b style="color:#ffcc00">${wave}</b></p>
+    <button id="restartBtn">REINTENTAR</button>
+  `;
+  ov.style.display = 'flex';
+  document.getElementById('restartBtn').onclick = () => {
+    ov.style.display = 'none'; reset(); running = true;
+    if (!isTouch) renderer.domElement.requestPointerLock();
+  };
+}
+
+document.getElementById('startBtn').onclick = async () => {
+  const nameInput = document.getElementById('player-name-input');
+  myPlayerName = (nameInput.value || 'Jugador' + Math.floor(Math.random()*1000)).trim().substring(0, 16);
+  document.getElementById('profile-name').textContent = myPlayerName;
+  document.getElementById('overlay').style.display = 'none';
+  await loadOptionalGLB();
+  buildPlayer();
+  initInstancedSystems();
+  reset();
+  running = true;
+  if (!isTouch) renderer.domElement.requestPointerLock();
+  connectMultiplayer();
+};
+
+// ============ LOOP ============
+let last = performance.now();
+function loop(now){
+  const dt = Math.min(DT_CAP, (now - last)/1000);
+  last = now;
+  const t = now/1000;
+  update(dt, t);
+  renderer.render(scene, camera);
+  requestAnimationFrame(loop);
+}
+
+// Inicializar estado sin arrancar
+if (!isTouch) {
+  document.addEventListener('keydown', ensureAudio, {once:true});
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
