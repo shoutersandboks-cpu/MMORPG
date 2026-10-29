@@ -1,105 +1,188 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Loot & Shooter 3D v5 - MMO</title>
-<link rel="stylesheet" href="styles.css">
-<script type="importmap">
-{ "imports": {
-  "three": "https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js",
-  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/",
-  "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm"
-} }
-</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>Loot & Shooter 3D: Éxodo - Tactical Sandbox MMO</title>
+  <link rel="stylesheet" href="styles.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/",
+      "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm"
+    }
+  }
+  </script>
 </head>
 <body>
-<div id="hud">
-  <div>Vida: <b id="hp">100</b></div>
-  <div class="hpbar"><div class="hpfill" id="hpfill" style="width:100%"></div></div>
-  <div>Puntos: <b id="score">0</b> · Oro: <span class="gold" id="gold">0</span> 🟡</div>
-  <div>Oleada: <b id="wave">1</b></div>
-  <div>Arma: <span class="weapon" id="weapon">Pistola [∞]</span></div>
-</div>
 
-<div id="profile">
-  <div class="pname" id="profile-name">Desconectado</div>
-  <div class="online"><span id="mp-online">0</span> jugadores en la zona</div>
-  <div class="save-status" id="save-status"></div>
-</div>
+  <!-- VIÑETA DE SANGRE AL RECIBIR DAÑO (ESTILO CALL OF DUTY) -->
+  <div id="damage-vignette"></div>
 
-<div id="wselector">
-  <div class="wslot active" data-w="pistol"><span class="kbd">1</span>Pistola</div>
-  <div class="wslot empty" data-w="shotgun"><span class="kbd">2</span>Escopeta</div>
-  <div class="wslot empty" data-w="rifle"><span class="kbd">3</span>Rifle</div>
-</div>
+  <!-- TEXTOS FLOTANTES DE DAÑO Y RECOLECCIÓN -->
+  <div id="floating-texts"></div>
 
-<div id="bossbar">
-  <div class="frame">
-    <div class="name">⚠ JEFE / DRAGÓN ⚠</div>
-    <div class="hpbar"><div class="hpfill" id="bosshp" style="width:100%"></div></div>
-  </div>
-</div>
-
-<div id="msg"></div>
-<div id="crosshair">
-  <div class="ch-line ch-top"></div><div class="ch-line ch-bottom"></div>
-  <div class="ch-line ch-left"></div><div class="ch-line ch-right"></div>
-  <div class="ch-dot"></div>
-</div>
-<div id="hitmarker"></div>
-
-<div id="mobile-ui">
-  <div id="joystick-base"><div id="joystick-knob"></div></div>
-  <div id="mobile-buttons">
-    <button id="m-shop">🛒</button>
-    <button id="m-switch">🔄</button>
-    <button id="m-fire">FIRE</button>
-  </div>
-</div>
-
-<div id="shop-modal" class="modal">
-  <div class="modal-inner">
-    <h2>🛒 TIENDA DEL REFUGIO</h2>
-    <div class="shop-gold">Tu Oro: <b id="shop-gold">0</b> 🟡</div>
-    <div id="shop-items"></div>
-    <button class="modal-close" id="shop-close">Cerrar (B)</button>
-  </div>
-</div>
-
-<div id="overlay">
-  <h1>LOOT &amp; SHOOTER 3D</h1>
-  <div id="story-box">
-    <b>Crónicas del Éxodo:</b> El mundo conocido ha caído. Bestias salvajes, dragones ancestrales y bandidos saqueadores han tomado el control de los valles. Eres uno de los últimos mercenarios en pie. Tu misión: adentrarte en las ruinas, liberar a los rehenes atrapados, recolectar oro y sobrevivir a oleadas interminables. Tu progreso y riqueza se guardarán en la red. La caza comienza ahora.
-  </div>
-  
-  <div id="auth-section">
-    <p>Registra tu agente o inicia sesión para guardar tu oro y nivel.</p>
-    <input id="auth-email" type="email" placeholder="Correo electrónico">
-    <input id="auth-password" type="password" placeholder="Contraseña">
-    <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px;">
-      <button id="loginBtn" class="secondary-btn">Iniciar Sesión</button>
-      <button id="registerBtn" class="secondary-btn">Registrarse</button>
+  <!-- HUD PRINCIPAL E INVENTARIO DE RECURSOS (ALBION + COD) -->
+  <div id="hud">
+    <div class="hud-header">
+      <span id="tier-badge" class="tier-badge">TIER 1 · RECLUTA</span>
+      <span class="lvl-text">Nvl. <b id="lvl">1</b></span>
     </div>
-    <p id="auth-error" style="color: #ff6666; font-size: 14px; display: none;"></p>
-    <div class="divider">O</div>
-    <button id="playGuestBtn" class="guest-btn">Jugar como Invitado (No guarda progreso)</button>
-  </div>
-  
-  <div id="start-section" style="display:none;">
-    <h2 style="color: #2ecc71;">¡Bienvenido, <span id="welcome-name"></span>!</h2>
-    <div class="keys">
-      <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Mover</div>
-      <div><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> Armas</div>
-      <div><kbd>Click</kbd> Disparar</div>
-      <div><kbd>E</kbd> Rehén</div>
-      <div><kbd>B</kbd> Tienda</div>
-      <div><kbd>Q</kbd> Cambiar</div>
-    </div>
-    <button id="startBtn">ENTRAR A LA ZONA</button>
-  </div>
-</div>
 
-<script type="module" src="main.js"></script>
+    <div class="bar-label">Salud: <b id="hp">100</b> / <span id="maxhp">100</span></div>
+    <div class="hpbar">
+      <div class="hpfill" id="hpfill" style="width:100%"></div>
+    </div>
+
+    <div class="bar-label">Estamina Táctica (Shift):</div>
+    <div class="staminabar">
+      <div class="staminafill" id="stamina-fill" style="width:100%"></div>
+    </div>
+
+    <div class="bar-label">Experiencia (XP):</div>
+    <div class="xpbar">
+      <div class="xpfill" id="xp-fill" style="width:0%"></div>
+    </div>
+
+    <div class="hud-stats">
+      <div>Puntos: <b id="score">0</b> · Oro: <span class="gold" id="gold">0</span> 🟡</div>
+      <div>Oleada: <b id="wave">1</b></div>
+      <div>Arma: <span class="weapon" id="weapon">Pistola T1 [∞]</span></div>
+    </div>
+
+    <!-- RECURSOS DE RECOLECCIÓN ESTILO ALBION ONLINE -->
+    <div class="resources-bar">
+      <div title="Madera (Talar árboles con E)">🪵 <span id="res-wood">0</span></div>
+      <div title="Mineral (Minar vetas con E)">⛏️ <span id="res-ore">0</span></div>
+      <div title="Piel (Cazar ciervos y lobos)">🦌 <span id="res-hide">0</span></div>
+      <div title="Escamas Ancestrales (Abatir dragones)">🐉 <span id="res-scales">0</span></div>
+    </div>
+
+    <div id="zone-indicator" class="zone-safe">🛡️ ZONA SEGURA (REFUGIO CENTRAL)</div>
+  </div>
+
+  <!-- RADAR TÁCTICO / MINIMAPA (ESTILO CALL OF DUTY) -->
+  <div id="minimap-container">
+    <canvas id="minimap" width="150" height="150"></canvas>
+    <div class="minimap-label">RADAR TÁCTICO [N]</div>
+  </div>
+
+  <!-- PERFIL DE AGENTE Y GUARDADO -->
+  <div id="profile">
+    <div class="pname" id="profile-name">Desconectado</div>
+    <div class="online"><span id="mp-online">1</span> agentes en la región</div>
+    <div class="save-status" id="save-status">Sincronizado</div>
+    <button id="manual-save-btn" title="Guardar progreso ahora">💾 Guardar</button>
+  </div>
+
+  <!-- REGISTRO DE BAJAS (KILLFEED) -->
+  <div id="killfeed"></div>
+
+  <!-- SELECTOR DE ARMAMENTO -->
+  <div id="wselector">
+    <div class="wslot active" data-w="pistol"><span class="kbd">1</span>Pistola</div>
+    <div class="wslot empty" data-w="shotgun"><span class="kbd">2</span>Escopeta</div>
+    <div class="wslot empty" data-w="rifle"><span class="kbd">3</span>Rifle Asalto</div>
+    <div class="wslot empty" data-w="sniper"><span class="kbd">4</span>Francotirador</div>
+  </div>
+
+  <!-- BARRA DE JEFE / DRAGÓN -->
+  <div id="bossbar">
+    <div class="frame">
+      <div class="name" id="bossname">⚠ DRAGÓN ANCESTRAL / JEFE DE ZONA ⚠</div>
+      <div class="hpbar">
+        <div class="hpfill" id="bosshp" style="width:100%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MENSAJES CENTRALES -->
+  <div id="msg"></div>
+
+  <!-- MIRA DINÁMICA (CROSSHAIR) Y HITMARKER -->
+  <div id="crosshair">
+    <div class="ch-line ch-top"></div>
+    <div class="ch-line ch-bottom"></div>
+    <div class="ch-line ch-left"></div>
+    <div class="ch-line ch-right"></div>
+    <div class="ch-dot"></div>
+  </div>
+  <div id="hitmarker"></div>
+
+  <!-- INTERFAZ TÁCTIL MULTITOUCH PARA MÓVILES -->
+  <div id="mobile-ui">
+    <div id="joystick-base">
+      <div id="joystick-knob"></div>
+    </div>
+    <div id="mobile-buttons">
+      <button id="m-shop" title="Mercado y Forja">⚒️</button>
+      <button id="m-gather" title="Recolectar / Rescatar">✋</button>
+      <button id="m-switch" title="Cambiar Arma">🔄</button>
+      <button id="m-sprint" title="Sprint Táctico">🏃</button>
+      <button id="m-ads" title="Apuntar (Mira)">🎯</button>
+      <button id="m-fire" title="Disparar">FIRE</button>
+    </div>
+  </div>
+
+  <!-- MODAL DE MERCADO Y FORJA DE TIERS (ALBION + ARMERÍA COD) -->
+  <div id="shop-modal" class="modal">
+    <div class="modal-inner">
+      <h2>⚒️ MERCADO Y FORJA DEL REFUGIO</h2>
+      <div class="shop-gold">
+        Oro: <b id="shop-gold">0</b> 🟡 | 
+        🪵 <b id="shop-wood">0</b> · 
+        ⛏️ <b id="shop-ore">0</b> · 
+        🦌 <b id="shop-hide">0</b> · 
+        🐉 <b id="shop-scales">0</b>
+      </div>
+
+      <h3 class="modal-subtitle">🛒 Suministros Tácticos y Armamento (Oro)</h3>
+      <div id="shop-items"></div>
+
+      <h3 class="modal-subtitle">⚒️ Forja de Equipamiento por Tiers (Albion Crafting)</h3>
+      <div id="craft-items"></div>
+
+      <button class="modal-close" id="shop-close">Cerrar Armería (Tecla B / ESC)</button>
+    </div>
+  </div>
+
+  <!-- PANTALLA DE INICIO, HISTORIA Y AUTENTICACIÓN HÍBRIDA -->
+  <div id="overlay">
+    <h1>LOOT &amp; SHOOTER 3D: ÉXODO</h1>
+    <div id="story-box">
+      <b>Crónicas del Éxodo (Tactical Sandbox MMO):</b> El viejo mundo colapsó tras el despertar de los Dragones de Atenuación. En los valles exteriores rige la ley de la Zona Roja: recolecta madera, extrae mineral, caza bestias para obtener pieles y forja armamento de <b>Tier 1 a Tier 5</b> en el Refugio Central. Combina puntería táctica de precisión con economía persistente. Cada incursión fuera del perímetro seguro arriesga tu vida a cambio de botín legendario.
+    </div>
+
+    <div id="auth-section">
+      <p>Identifica a tu agente para sincronizar tu economía, recursos y equipamiento Tier.</p>
+      <input id="auth-email" type="text" placeholder="Correo electrónico o Nombre de Agente" autocomplete="username">
+      <input id="auth-password" type="password" placeholder="Contraseña (mín. 6 caracteres)" autocomplete="current-password">
+      <div class="auth-btn-row">
+        <button id="loginBtn" class="secondary-btn">Iniciar Sesión</button>
+        <button id="registerBtn" class="secondary-btn">Registrar Agente</button>
+      </div>
+      <p id="auth-error"></p>
+      <div class="divider">— O DESPLIEGUE RÁPIDO —</div>
+      <button id="playGuestBtn" class="guest-btn">Entrar como Mercenario Local (Guardado en este equipo)</button>
+    </div>
+
+    <div id="start-section" style="display:none;">
+      <h2 style="color: #2ecc71; margin-bottom: 6px;">¡Listo para el despliegue, <span id="welcome-name"></span>!</h2>
+      <p id="loading-r2-status" style="color: #ffcc00; font-size: 13px;">Conectando con el almacén gráfico Cloudflare R2...</p>
+      <div class="keys">
+        <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Mover</div>
+        <div><kbd>Shift</kbd> Sprint Táctico</div>
+        <div><kbd>Click Izq</kbd> Disparar</div>
+        <div><kbd>Click Der</kbd> Apuntar (ADS)</div>
+        <div><kbd>E</kbd> Recolectar / Rehén</div>
+        <div><kbd>B</kbd> Forja y Mercado</div>
+        <div><kbd>1</kbd>-<kbd>4</kbd> / <kbd>Q</kbd> Armas</div>
+      </div>
+      <button id="startBtn">DESPLEGAR EN LA ZONA</button>
+    </div>
+  </div>
+
+  <script type="module" src="main.js"></script>
 </body>
 </html>
