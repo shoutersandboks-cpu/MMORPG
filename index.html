@@ -1,130 +1,237 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Inmoinnova | Panel de Control y Broker Central</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inmoinnova · Panel de Consultas</title>
+  <!-- Supabase JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Tailwind CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <!-- jsPDF + AutoTable -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 </head>
-<body class="bg-gray-100 font-sans">
-    <div class="container mx-auto p-6">
-        <h1 class="text-3xl font-bold text-gray-800 mb-6">Inmoinnova Real Estate - Panel Privado</h1>
+<body class="bg-gray-100 font-sans p-4">
+  <div class="max-w-7xl mx-auto">
 
-        <!-- Autenticación del Broker -->
-        <div id="auth-box" class="bg-white p-6 rounded-lg shadow-md mb-6">
-            <h2 class="text-xl font-semibold mb-4">Acceso Autorizado del Broker</h2>
-            <input type="password" id="broker-key" placeholder="Ingrese su Clave Secreta Master" class="border p-2 rounded w-full mb-4">
-            <button onclick="verificarAcceso()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Entrar al Panel</button>
-        </div>
-
-        <!-- Panel de Funciones (Oculto hasta autenticarse) -->
-        <div id="admin-panel" class="hidden">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <!-- Tarjeta Purga de Inmuebles -->
-                <div class="bg-white p-6 rounded-lg shadow-md">
-                    <h3 class="text-lg font-semibold text-red-600 mb-2">Mantenimiento de Inventario</h3>
-                    <p class="text-gray-600 mb-4">Elimina automáticamente los inmuebles con más de 3 meses de antigüedad en la base de datos.</p>
-                    <button onclick="ejecutarPurga()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Purgar Inmuebles > 3 Meses</button>
-                    <p id="purge-status" class="mt-2 text-sm text-gray-500"></p>
-                </div>
-
-                <!-- Tarjeta Gestión de Agentes -->
-                <div class="bg-white p-6 rounded-lg shadow-md">
-                    <h3 class="text-lg font-semibold text-green-600 mb-2">Aprobación de Agentes</h3>
-                    <p class="text-gray-600 mb-4">Aprueba o rechaza solicitudes de nuevos asesores inmobiliarios para el sistema.</p>
-                    <button onclick="cargarAgentesPendientes()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Actualizar Lista</button>
-                </div>
-            </div>
-
-            <!-- Listado de Agentes Pendientes -->
-            <div class="bg-white p-6 rounded-lg shadow-md">
-                <h3 class="text-lg font-semibold mb-4">Solicitudes de Registro</h3>
-                <div id="agents-list" class="space-y-2">
-                    <p class="text-gray-500">Haga clic en 'Actualizar Lista' para ver solicitudes pendientes.</p>
-                </div>
-            </div>
-        </div>
+    <!-- 1. Autenticación del Broker -->
+    <div id="auth-box" class="bg-white p-6 rounded-lg shadow-md mb-6">
+      <h1 class="text-2xl font-bold text-gray-800 mb-4">Acceso al Panel de Consultas</h1>
+      <p class="text-gray-600 mb-4">Ingrese su clave secreta de broker para continuar.</p>
+      <input type="password" id="broker-key" placeholder="Clave de Broker"
+             class="border p-2 rounded w-full mb-4" />
+      <button onclick="autenticarBroker()"
+              class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full">
+        Entrar
+      </button>
+      <p id="auth-status" class="mt-2 text-sm text-red-500"></p>
     </div>
 
-    <script>
-        const SUPABASE_URL = "https://yvaizvkonegqhqkqftcn.supabase.co";
-        let SUPABASE_KEY = ""; // Se asigna al verificar la clave del broker
-        let supabaseClient = null;
+    <!-- 2. Panel de Consultas (oculto hasta autenticarse) -->
+    <div id="consulta-panel" class="hidden">
+      <h1 class="text-3xl font-bold text-gray-800 mb-6">Inmoinnova · Consulta de Fichas</h1>
 
-        function verificarAcceso() {
-            const keyInput = document.getElementById("broker-key").value.trim();
-            if (keyInput.length > 10) {
-                SUPABASE_KEY = keyInput;
-                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-                document.getElementById("auth-box").classList.add("hidden");
-                document.getElementById("admin-panel").classList.remove("hidden");
-                cargarAgentesPendientes();
-            } else {
-                alert("Clave de broker inválida.");
-            }
+      <!-- Filtros -->
+      <div class="bg-white p-6 rounded-lg shadow-md mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Filtro de antigüedad -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Antigüedad</label>
+          <select id="filtro-antiguedad" class="border p-2 rounded w-full">
+            <option value="siempre">Desde siempre</option>
+            <option value="recientes" selected>Más recientes</option>
+            <option value="especifica">Fecha específica</option>
+          </select>
+        </div>
+        <!-- Fecha específica (oculta por defecto) -->
+        <div id="fecha-especifica-container" class="hidden">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
+          <input type="date" id="fecha-especifica" class="border p-2 rounded w-full" />
+        </div>
+        <!-- Botón de filtro -->
+        <div class="flex items-end">
+          <button onclick="cargarConsultas()"
+                  class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full">
+            Aplicar Filtros
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabla de resultados -->
+      <div class="bg-white rounded-lg shadow-md overflow-x-auto">
+        <table id="tabla-resultados" class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Título</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Zona</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Precio (USD)</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Metros²</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-resultados" class="bg-white divide-y divide-gray-200">
+            <tr><td colspan="5" class="text-center py-4 text-gray-500">Cargue los resultados...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Botón de exportación a PDF -->
+      <div class="mt-4 flex justify-end">
+        <button onclick="exportarPDF()"
+                class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700">
+          Exportar a PDF
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Configuración
+    const SUPABASE_URL = "https://yvaizvkonegqhqkqftcn.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_QG8X26MRcrGwpWoT7B6odw_VaQpr72j"; // Reemplaza con tu anon key real
+    const WORKER_URL = "https://tu-worker.tu-subdominio.workers.dev"; // URL de tu Worker
+
+    let supabaseClient = null;
+    let datosActuales = [];
+
+    // 1. Autenticación del Broker (llama al Worker para validar la clave)
+    async function autenticarBroker() {
+      const key = document.getElementById('broker-key').value.trim();
+      if (!key) {
+        document.getElementById('auth-status').innerText = 'Ingrese una clave.';
+        return;
+      }
+
+      try {
+        const resp = await fetch(`${WORKER_URL}/auth/broker`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key })
+        });
+        const data = await resp.json();
+
+        if (!resp.ok) {
+          document.getElementById('auth-status').innerText = data.error || 'Clave incorrecta.';
+          return;
         }
 
-        async function ejecutarPurga() {
-            if (!confirm("¿Está seguro de eliminar todos los inmuebles con más de 3 meses de antigüedad?")) return;
-            
-            const fechaLimite = new Date();
-            fechaLimite.setMonth(fechaLimite.getMonth() - 3);
+        // Crear cliente Supabase con el JWT recibido
+        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+          global: { headers: { Authorization: `Bearer ${data.token}` } }
+        });
 
-            const { error, count } = await supabaseClient
-                .from('market_listings')
-                .delete({ count: 'exact' })
-                .lt('ultima_actualizacion', fechaLimite.toISOString());
+        // Mostrar panel de consultas
+        document.getElementById('auth-box').classList.add('hidden');
+        document.getElementById('consulta-panel').classList.remove('hidden');
 
-            if (error) {
-                document.getElementById("purge-status").innerText = "Error en purga: " + error.message;
-            } else {
-                document.getElementById("purge-status").innerText = `¡Purga exitosa! Registros eliminados: ${count || 0}`;
-            }
-        }
+        // Cargar consultas iniciales
+        cargarConsultas();
+      } catch (err) {
+        document.getElementById('auth-status').innerText = 'Error de conexión: ' + err.message;
+      }
+    }
 
-        async function cargarAgentesPendientes() {
-            const { data, error } = await supabaseClient
-                .from('broker_agents')
-                .select('*')
-                .eq('estado', 'pendiente');
+    // 2. Cargar consultas según filtros de fecha
+    async function cargarConsultas() {
+      if (!supabaseClient) return;
 
-            const container = document.getElementById("agents-list");
-            container.innerHTML = "";
+      const filtro = document.getElementById('filtro-antiguedad').value;
+      const fechaInput = document.getElementById('fecha-especifica').value;
 
-            if (error) {
-                container.innerHTML = `<p class="text-red-500">Error al cargar: ${error.message}</p>`;
-                return;
-            }
+      let query = supabaseClient
+        .from('market_listings')
+        .select('titulo, zona, precio_usd, metros_2, fecha_captura')
+        .order('fecha_captura', { ascending: false });
 
-            if (data.length === 0) {
-                container.innerHTML = `<p class="text-gray-500">No hay agentes pendientes por aprobar.</p>`;
-                return;
-            }
+      if (filtro === 'recientes') {
+        // Últimos 30 días
+        const hace30Dias = new Date();
+        hace30Dias.setDate(hace30Dias.getDate() - 30);
+        query = query.gte('fecha_captura', hace30Dias.toISOString());
+      } else if (filtro === 'especifica' && fechaInput) {
+        // Fecha específica (todo el día)
+        const inicio = new Date(fechaInput + 'T00:00:00Z').toISOString();
+        const fin = new Date(fechaInput + 'T23:59:59Z').toISOString();
+        query = query.gte('fecha_captura', inicio).lte('fecha_captura', fin);
+      }
+      // "siempre" no añade filtro
 
-            data.forEach(agent => {
-                const row = document.createElement("div");
-                row.className = "flex justify-between items-center border-b p-2";
-                row.innerHTML = `
-                    <span><strong>${agent.nombre}</strong> (${agent.email}) - ${agent.telefono || 'Sin tel'}</span>
-                    <button onclick="aprobarAgente('${agent.id}')" class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600">Aprobar</button>
-                `;
-                container.appendChild(row);
-            });
-        }
+      const { data, error } = await query;
 
-        async function aprobarAgente(id) {
-            const { error } = await supabaseClient
-                .from('broker_agents')
-                .update({ estado: 'aprobado' })
-                .eq('id', id);
+      if (error) {
+        alert('Error al cargar: ' + error.message);
+        return;
+      }
 
-            if (error) {
-                alert("Error al aprobar: " + error.message);
-            } else {
-                alert("¡Agente aprobado con éxito!");
-                cargarAgentesPendientes();
-            }
-        }
-    </script>
+      datosActuales = data || [];
+      renderizarTabla(datosActuales);
+    }
+
+    // 3. Renderizar tabla (responsive)
+    function renderizarTabla(datos) {
+      const tbody = document.getElementById('tbody-resultados');
+      if (datos.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">No hay resultados.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = datos.map(item => `
+        <tr class="hover:bg-gray-50">
+          <td class="px-4 py-2 text-sm text-gray-800">${item.titulo || '—'}</td>
+          <td class="px-4 py-2 text-sm text-gray-800">${item.zona || '—'}</td>
+          <td class="px-4 py-2 text-sm text-gray-800">$${Number(item.precio_usd).toLocaleString()}</td>
+          <td class="px-4 py-2 text-sm text-gray-800">${item.metros_2 || '—'}</td>
+          <td class="px-4 py-2 text-sm text-gray-500">${new Date(item.fecha_captura).toLocaleDateString()}</td>
+        </tr>
+      `).join('');
+    }
+
+    // 4. Exportar a PDF (formato directorio)
+    function exportarPDF() {
+      if (datosActuales.length === 0) {
+        alert('No hay datos para exportar.');
+        return;
+      }
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'landscape' });
+
+      doc.setFontSize(16);
+      doc.text('Directorio de Fichas Inmobiliarias', 14, 15);
+      doc.setFontSize(10);
+      doc.text(`Generado: ${new Date().toLocaleString()}`, 14, 22);
+
+      const head = [['Título', 'Zona', 'Precio (USD)', 'Metros²', 'Fecha']];
+      const body = datosActuales.map(item => [
+        item.titulo || '—',
+        item.zona || '—',
+        `$${Number(item.precio_usd).toLocaleString()}`,
+        item.metros_2 || '—',
+        new Date(item.fecha_captura).toLocaleDateString()
+      ]);
+
+      doc.autoTable({
+        head: head,
+        body: body,
+        startY: 28,
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+        alternateRowStyles: { fillColor: [245, 245, 245] }
+      });
+
+      doc.save('directorio_inmobiliario.pdf');
+    }
+
+    // Mostrar/ocultar campo de fecha específica
+    document.getElementById('filtro-antiguedad').addEventListener('change', function () {
+      const container = document.getElementById('fecha-especifica-container');
+      if (this.value === 'especifica') {
+        container.classList.remove('hidden');
+      } else {
+        container.classList.add('hidden');
+      }
+    });
+  </script>
 </body>
 </html>
