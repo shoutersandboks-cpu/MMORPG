@@ -1,237 +1,370 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Inmoinnova · Panel de Consultas</title>
-  <!-- Supabase JS -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- Tailwind CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <!-- jsPDF + AutoTable -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-</head>
-<body class="bg-gray-100 font-sans p-4">
-  <div class="max-w-7xl mx-auto">
+export default {
+  // ==========================================================
+  // 1. CRON cada 12h
+  // ==========================================================
+  async scheduled(event, env, ctx) {
+    console.log("Rutina de mantenimiento programada cada 12 horas ejecutada con éxito.");
+  },
 
-    <!-- 1. Autenticación del Broker -->
-    <div id="auth-box" class="bg-white p-6 rounded-lg shadow-md mb-6">
-      <h1 class="text-2xl font-bold text-gray-800 mb-4">Acceso al Panel de Consultas</h1>
-      <p class="text-gray-600 mb-4">Ingrese su clave secreta de broker para continuar.</p>
-      <input type="password" id="broker-key" placeholder="Clave de Broker"
-             class="border p-2 rounded w-full mb-4" />
-      <button onclick="autenticarBroker()"
-              class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full">
-        Entrar
-      </button>
-      <p id="auth-status" class="mt-2 text-sm text-red-500"></p>
-    </div>
+  // ==========================================================
+  // 2. FETCH HANDLER
+  // ==========================================================
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
 
-    <!-- 2. Panel de Consultas (oculto hasta autenticarse) -->
-    <div id="consulta-panel" class="hidden">
-      <h1 class="text-3xl font-bold text-gray-800 mb-6">Inmoinnova · Consulta de Fichas</h1>
+    // ---- CORS preflight ----
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        },
+      });
+    }
 
-      <!-- Filtros -->
-      <div class="bg-white p-6 rounded-lg shadow-md mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <!-- Filtro de antigüedad -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Antigüedad</label>
-          <select id="filtro-antiguedad" class="border p-2 rounded w-full">
-            <option value="siempre">Desde siempre</option>
-            <option value="recientes" selected>Más recientes</option>
-            <option value="especifica">Fecha específica</option>
-          </select>
-        </div>
-        <!-- Fecha específica (oculta por defecto) -->
-        <div id="fecha-especifica-container" class="hidden">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
-          <input type="date" id="fecha-especifica" class="border p-2 rounded w-full" />
-        </div>
-        <!-- Botón de filtro -->
-        <div class="flex items-end">
-          <button onclick="cargarConsultas()"
-                  class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full">
-            Aplicar Filtros
-          </button>
-        </div>
-      </div>
-
-      <!-- Tabla de resultados -->
-      <div class="bg-white rounded-lg shadow-md overflow-x-auto">
-        <table id="tabla-resultados" class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Título</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Zona</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Precio (USD)</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Metros²</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
-            </tr>
-          </thead>
-          <tbody id="tbody-resultados" class="bg-white divide-y divide-gray-200">
-            <tr><td colspan="5" class="text-center py-4 text-gray-500">Cargue los resultados...</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- Botón de exportación a PDF -->
-      <div class="mt-4 flex justify-end">
-        <button onclick="exportarPDF()"
-                class="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700">
-          Exportar a PDF
-        </button>
-      </div>
-    </div>
-
-  </div>
-
-  <script>
-    // Configuración
-    const SUPABASE_URL = "https://yvaizvkonegqhqkqftcn.supabase.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_QG8X26MRcrGwpWoT7B6odw_VaQpr72j"; // Reemplaza con tu anon key real
-    const WORKER_URL = "https://tu-worker.tu-subdominio.workers.dev"; // URL de tu Worker
-
-    let supabaseClient = null;
-    let datosActuales = [];
-
-    // 1. Autenticación del Broker (llama al Worker para validar la clave)
-    async function autenticarBroker() {
-      const key = document.getElementById('broker-key').value.trim();
-      if (!key) {
-        document.getElementById('auth-status').innerText = 'Ingrese una clave.';
-        return;
-      }
-
+    // ---- Endpoint autenticación broker ----
+    if (url.pathname === "/auth/broker" && request.method === "POST") {
       try {
-        const resp = await fetch(`${WORKER_URL}/auth/broker`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ key })
-        });
-        const data = await resp.json();
+        const body = await request.json();
+        const key = (body.key || "").trim();
 
-        if (!resp.ok) {
-          document.getElementById('auth-status').innerText = data.error || 'Clave incorrecta.';
-          return;
+        if (!env.BROKER_ACCESS_KEY) {
+          return this.jsonResponse({ error: "Servidor mal configurado: falta BROKER_ACCESS_KEY" }, 500);
+        }
+        if (!key || key !== env.BROKER_ACCESS_KEY) {
+          return this.jsonResponse({ error: "Clave de broker inválida" }, 401);
         }
 
-        // Crear cliente Supabase con el JWT recibido
-        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-          global: { headers: { Authorization: `Bearer ${data.token}` } }
-        });
-
-        // Mostrar panel de consultas
-        document.getElementById('auth-box').classList.add('hidden');
-        document.getElementById('consulta-panel').classList.remove('hidden');
-
-        // Cargar consultas iniciales
-        cargarConsultas();
-      } catch (err) {
-        document.getElementById('auth-status').innerText = 'Error de conexión: ' + err.message;
+        const token = await this.firmarTokenBroker(env);
+        return this.jsonResponse({ ok: true, token }, 200);
+      } catch (e) {
+        return this.jsonResponse({ error: e.message }, 400);
       }
     }
 
-    // 2. Cargar consultas según filtros de fecha
-    async function cargarConsultas() {
-      if (!supabaseClient) return;
-
-      const filtro = document.getElementById('filtro-antiguedad').value;
-      const fechaInput = document.getElementById('fecha-especifica').value;
-
-      let query = supabaseClient
-        .from('market_listings')
-        .select('titulo, zona, precio_usd, metros_2, fecha_captura')
-        .order('fecha_captura', { ascending: false });
-
-      if (filtro === 'recientes') {
-        // Últimos 30 días
-        const hace30Dias = new Date();
-        hace30Dias.setDate(hace30Dias.getDate() - 30);
-        query = query.gte('fecha_captura', hace30Dias.toISOString());
-      } else if (filtro === 'especifica' && fechaInput) {
-        // Fecha específica (todo el día)
-        const inicio = new Date(fechaInput + 'T00:00:00Z').toISOString();
-        const fin = new Date(fechaInput + 'T23:59:59Z').toISOString();
-        query = query.gte('fecha_captura', inicio).lte('fecha_captura', fin);
-      }
-      // "siempre" no añade filtro
-
-      const { data, error } = await query;
-
-      if (error) {
-        alert('Error al cargar: ' + error.message);
-        return;
-      }
-
-      datosActuales = data || [];
-      renderizarTabla(datosActuales);
+    // ---- Webhook Telegram ----
+    if (request.method !== "POST") {
+      return new Response("Inmoinnova Gateway Operativo (.TXT Masivo)", { status: 200 });
     }
 
-    // 3. Renderizar tabla (responsive)
-    function renderizarTabla(datos) {
-      const tbody = document.getElementById('tbody-resultados');
-      if (datos.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">No hay resultados.</td></tr>';
-        return;
+    try {
+      const update = await request.json();
+      const message = update.message || update.channel_post;
+      if (!message) return this.jsonResponse({ ok: true }, 200);
+
+      const chatId = message.chat.id;
+      if (message.from && message.from.is_bot) return this.jsonResponse({ ok: true }, 200);
+
+      // ---- Archivo .txt (streaming) ----
+      if (message.document && message.document.file_name &&
+          message.document.file_name.toLowerCase().endsWith(".txt")) {
+
+        const fileId = message.document.file_id;
+        const fileName = message.document.file_name;
+
+        await this.enviarMensajeTelegram(env, chatId,
+          `📥 Recibido archivo "${fileName}". Procesando por streaming, filtrando duplicados y sincronizando con Supabase...`);
+
+        const getFileResp = await fetch(
+          `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/getFile?file_id=${fileId}`
+        );
+        const fileData = await getFileResp.json();
+
+        if (fileData.ok && fileData.result.file_path) {
+          const downloadUrl = `https://api.telegram.org/file/bot${env.TELEGRAM_BOT_TOKEN}/${fileData.result.file_path}`;
+          const txtResp = await fetch(downloadUrl);
+
+          let resumen = { totalGuardadas: 0, totalFallidas: 0 };
+          let errorStream = null;
+
+          try {
+            resumen = await this.procesarArchivoGrandeStream(txtResp.body, env);
+          } catch (e) {
+            errorStream = e.message;
+          }
+
+          if (errorStream) {
+            await this.enviarMensajeTelegram(env, chatId,
+              `❌ Error durante el procesamiento: ${errorStream}\n- Guardadas antes del error: ${resumen.totalGuardadas}\n- Fallidas: ${resumen.totalFallidas}`);
+          } else if (resumen.totalGuardadas > 0 || resumen.totalFallidas > 0) {
+            let msg = `✅ Procesamiento finalizado\n- Archivo: ${fileName}\n- Fichas únicas guardadas: ${resumen.totalGuardadas}`;
+            if (resumen.totalFallidas > 0) msg += `\n⚠️ Fichas con error de Supabase: ${resumen.totalFallidas}`;
+            await this.enviarMensajeTelegram(env, chatId, msg);
+          } else {
+            await this.enviarMensajeTelegram(env, chatId,
+              `⚠️ El archivo fue leído, pero no se detectaron fichas inmobiliarias válidas.`);
+          }
+        }
+        return this.jsonResponse({ ok: true }, 200);
       }
 
-      tbody.innerHTML = datos.map(item => `
-        <tr class="hover:bg-gray-50">
-          <td class="px-4 py-2 text-sm text-gray-800">${item.titulo || '—'}</td>
-          <td class="px-4 py-2 text-sm text-gray-800">${item.zona || '—'}</td>
-          <td class="px-4 py-2 text-sm text-gray-800">$${Number(item.precio_usd).toLocaleString()}</td>
-          <td class="px-4 py-2 text-sm text-gray-800">${item.metros_2 || '—'}</td>
-          <td class="px-4 py-2 text-sm text-gray-500">${new Date(item.fecha_captura).toLocaleDateString()}</td>
-        </tr>
-      `).join('');
+      // ---- Texto individual ----
+      else if (message.text) {
+        const texto = message.text;
+        if (texto.startsWith("/")) return this.jsonResponse({ ok: true }, 200);
+
+        const remitente = message.from
+          ? message.from.first_name + " " + (message.from.last_name || "")
+          : "Administrador";
+
+        const ficha = this.parsearFichaUnica(texto, remitente, "Telegram Directo", new Date().toISOString());
+
+        if (ficha) {
+          const r = await this.guardarLotesEnSupabase(env, [ficha]);
+          await this.enviarMensajeTelegram(env, chatId,
+            r.exito ? `✅ Ficha individual guardada en Supabase.`
+                    : `❌ Error guardando ficha: ${r.error}`);
+        } else {
+          await this.enviarMensajeTelegram(env, chatId,
+            `ℹ️ El mensaje no cumple con los parámetros de una ficha inmobiliaria.`);
+        }
+      }
+
+      return this.jsonResponse({ ok: true }, 200);
+    } catch (err) {
+      return this.jsonResponse({ error: err.message }, 500);
     }
+  },
 
-    // 4. Exportar a PDF (formato directorio)
-    function exportarPDF() {
-      if (datosActuales.length === 0) {
-        alert('No hay datos para exportar.');
-        return;
-      }
-
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({ orientation: 'landscape' });
-
-      doc.setFontSize(16);
-      doc.text('Directorio de Fichas Inmobiliarias', 14, 15);
-      doc.setFontSize(10);
-      doc.text(`Generado: ${new Date().toLocaleString()}`, 14, 22);
-
-      const head = [['Título', 'Zona', 'Precio (USD)', 'Metros²', 'Fecha']];
-      const body = datosActuales.map(item => [
-        item.titulo || '—',
-        item.zona || '—',
-        `$${Number(item.precio_usd).toLocaleString()}`,
-        item.metros_2 || '—',
-        new Date(item.fecha_captura).toLocaleDateString()
-      ]);
-
-      doc.autoTable({
-        head: head,
-        body: body,
-        startY: 28,
-        styles: { fontSize: 8, cellPadding: 2 },
-        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-        alternateRowStyles: { fillColor: [245, 245, 245] }
-      });
-
-      doc.save('directorio_inmobiliario.pdf');
-    }
-
-    // Mostrar/ocultar campo de fecha específica
-    document.getElementById('filtro-antiguedad').addEventListener('change', function () {
-      const container = document.getElementById('fecha-especifica-container');
-      if (this.value === 'especifica') {
-        container.classList.remove('hidden');
-      } else {
-        container.classList.add('hidden');
-      }
+  // ==========================================================
+  // 3. Helpers de respuesta y token
+  // ==========================================================
+  jsonResponse(obj, status) {
+    return new Response(JSON.stringify(obj), {
+      status,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
     });
-  </script>
-</body>
-</html>
+  },
+
+  async firmarTokenBroker(env) {
+    const secret = env.JWT_SECRET || env.BROKER_ACCESS_KEY;
+    const payload = `broker:${Date.now()}`;
+    const key = await crypto.subtle.importKey(
+      "raw", new TextEncoder().encode(secret),
+      { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+    );
+    const sigBuf = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload));
+    const sigBytes = new Uint8Array(sigBuf);
+    let sigHex = "";
+    for (let i = 0; i < sigBytes.length; i++) sigHex += sigBytes[i].toString(16).padStart(2, "0");
+    return `${btoa(payload)}.${sigHex}`;
+  },
+
+  // ==========================================================
+  // 4. Streaming de archivos grandes
+  // ==========================================================
+  async procesarArchivoGrandeStream(stream, env) {
+    const reader = stream.getReader();
+    const decoder = new TextDecoder("utf-8");
+
+    let bufferLinea = "";
+    let acumuladorMensaje = "";
+    let agenteActual = "Inmobiliaria Aliada";
+    let fechaActual = new Date().toISOString();
+
+    let pendientes = [];
+    let totalGuardadas = 0;
+    let totalFallidas = 0;
+
+    const BATCH_SIZE = 50;
+    const PAUSA_MS = 100;
+
+    const guardarLoteSiAplica = async (forzar = false) => {
+      if (pendientes.length >= BATCH_SIZE || (forzar && pendientes.length > 0)) {
+        // Anti-duplicados dentro del lote
+        const unicosMap = new Map();
+        for (const item of pendientes) unicosMap.set(item.url_fuente, item);
+        const loteUnico = Array.from(unicosMap.values());
+        pendientes = [];
+
+        if (loteUnico.length > 0) {
+          const resultado = await this.guardarLotesEnSupabase(env, loteUnico);
+          if (resultado.exito) {
+            totalGuardadas += loteUnico.length;
+          } else {
+            totalFallidas += loteUnico.length;
+            console.error("Lote fallido en Supabase:", resultado.error);
+          }
+        }
+        await new Promise((r) => setTimeout(r, PAUSA_MS));
+      }
+    };
+
+    const procesarLinea = (linea) => {
+      const matchCabecera = linea.match(
+        /^(\d{1,2}\/\d{1,2}\/\d{2,4}\s+\d{1,2}:\d{2}\s*(?:p\.\s*m\.|a\.\s*m\.)?)\s*-\s*([^:]+):\s*(.*)$/
+      );
+      if (matchCabecera) {
+        if (acumuladorMensaje.length > 35) {
+          let ficha = null;
+          try {
+            ficha = this.parsearFichaUnica(acumuladorMensaje, agenteActual, "WhatsApp", fechaActual);
+          } catch (_) {}
+          if (ficha) pendientes.push(ficha);
+        }
+        fechaActual = matchCabecera[1];
+        agenteActual = matchCabecera[2].trim();
+        acumuladorMensaje = matchCabecera[3];
+      } else {
+        acumuladorMensaje += "\n" + linea;
+      }
+    };
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        bufferLinea += decoder.decode(value, { stream: true });
+        const lineas = bufferLinea.split(/\r?\n/);
+        bufferLinea = lineas.pop();
+
+        for (const linea of lineas) procesarLinea(linea);
+
+        await guardarLoteSiAplica();
+      }
+
+      if (bufferLinea.length > 0) procesarLinea(bufferLinea);
+
+      if (acumuladorMensaje.length > 35) {
+        let ficha = null;
+        try {
+          ficha = this.parsearFichaUnica(acumuladorMensaje, agenteActual, "WhatsApp", fechaActual);
+        } catch (_) {}
+        if (ficha) pendientes.push(ficha);
+      }
+
+      await guardarLoteSiAplica(true);
+    } finally {
+      try { reader.releaseLock(); } catch (_) {}
+    }
+
+    return { totalGuardadas, totalFallidas };
+  },
+
+  // ==========================================================
+  // 5. Parseo de ficha
+  // ==========================================================
+  parsearFichaUnica(texto, remitenteDefault, contactoDefault, fechaCruda) {
+    if (
+      texto.length < 35 ||
+      texto.includes("<Multimedia omitido>") ||
+      texto.includes("se unió con el enlace") ||
+      texto.includes("salió del grupo") ||
+      texto.includes("cambió su número")
+    ) return null;
+
+    let fechaIso = new Date().toISOString();
+    try {
+      if (fechaCruda && typeof fechaCruda === "string" && fechaCruda.includes("/")) {
+        const partes = fechaCruda.split(" ");
+        const fechaPartes = partes[0].split("/");
+        if (fechaPartes.length === 3) {
+          const dia = fechaPartes[0].padStart(2, "0");
+          const mes = fechaPartes[1].padStart(2, "0");
+          let anio = fechaPartes[2];
+          if (anio.length === 2) anio = "20" + anio;
+          fechaIso = `${anio}-${mes}-${dia}T12:00:00.000Z`;
+        }
+      }
+    } catch (e) {}
+
+    const esAlquiler = /alquiler|alquila|canon|ref\s*:/i.test(texto);
+    const tipoOperacion = esAlquiler ? "Alquiler" : "Venta";
+
+    const zonasValencia = [
+      "Guaparo", "El Parral", "El Trigal", "La Trigaleña", "Prebo",
+      "El Bosque", "Los Mangos", "La Viña", "Valles de Camoruco",
+      "Naguanagua", "Mañongo", "San Diego", "Las Chimeneas", "Puerto Cabello",
+      "Altos de Mirador", "Agua Blanca", "Sabana Larga",
+    ];
+
+    let zonaDetectada = "Valencia Norte";
+    for (const z of zonasValencia) {
+      if (new RegExp(z, "i").test(texto)) { zonaDetectada = z; break; }
+    }
+
+    const matchPrecio = texto.match(/(?:[$]|USD|U\$S)\s*(\d{1,3}(?:[.,]\d{3})*|\d{3,6})/i);
+    let precioUsd = matchPrecio
+      ? parseFloat(matchPrecio[1].replace(/\./g, "").replace(",", "."))
+      : 0;
+    if (precioUsd < 50 && esAlquiler) precioUsd = precioUsd * 100;
+
+    const matchMetros = texto.match(/(\d{2,4})\s*(?:m²|mts2|m2|mt2)/i);
+    const metros2 = matchMetros ? parseFloat(matchMetros[1]) : 0;
+
+    const matchTel = texto.match(/(?:0\d{3}[\-\s]?\d{7}|[+]?58\d{10})/);
+    const telefono = matchTel ? matchTel[0] : contactoDefault;
+
+    const hashUnico = "txt-v6-" + this.stringToHash(texto.substring(0, 90));
+
+    return {
+      titulo: `${tipoOperacion} en ${zonaDetectada} - ${precioUsd > 0 ? "$" + precioUsd : "Consultar"}`,
+      zona: zonaDetectada,
+      precio_usd: precioUsd > 0 ? precioUsd : 50000,
+      metros_2: metros2 > 0 ? metros2 : 80,
+      agencia_o_contacto: `${remitenteDefault} (${telefono})`,
+      url_fuente: `https://inmoinnova.internal/telegram-txt/${hashUnico}`,
+      descripcion_ficha: texto,
+      tipo_operacion: tipoOperacion,
+      fecha_captura: fechaIso,
+      ultima_actualizacion: new Date().toISOString(),
+    };
+  },
+
+  stringToHash(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = (hash << 5) - hash + str.charCodeAt(i);
+      hash |= 0;
+    }
+    return Math.abs(hash).toString(36);
+  },
+
+  // ==========================================================
+  // 6. Upsert batch en Supabase
+  // ==========================================================
+  async guardarLotesEnSupabase(env, items) {
+    const supabaseUrl = (env.SUPABASE_URL || "").trim().replace(/\/$/, "");
+    const supabaseKey = (env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
+    const endpoint = `${supabaseUrl}/rest/v1/market_listings?on_conflict=url_fuente`;
+
+    const headers = {
+      "Content-Type": "application/json; charset=utf-8",
+      "User-Agent": "Inmoinnova-TXT-Bot/6.0",
+      apikey: supabaseKey,
+      Prefer: "resolution=merge-duplicates",
+    };
+    if (!supabaseKey.startsWith("sb_")) {
+      headers["Authorization"] = `Bearer ${supabaseKey}`;
+    }
+
+    const unicosMap = new Map();
+    items.forEach((item) => unicosMap.set(item.url_fuente, item));
+    const itemsUnicos = Array.from(unicosMap.values());
+
+    const tamanoLote = 50;
+    for (let i = 0; i < itemsUnicos.length; i += tamanoLote) {
+      const lote = itemsUnicos.slice(i, i + tamanoLote);
+      const res = await fetch(endpoint, { method: "POST", headers, body: JSON.stringify(lote) });
+      if (!res.ok) {
+        const errText = await res.text();
+        return { exito: false, error: errText };
+      }
+    }
+    return { exito: true, total: itemsUnicos.length };
+  },
+
+  // ==========================================================
+  // 7. Telegram
+  // ==========================================================
+  async enviarMensajeTelegram(env, chatId, text) {
+    await fetch(
+      `https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`,
+      { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: chatId, text }) }
+    );
+  },
+};
