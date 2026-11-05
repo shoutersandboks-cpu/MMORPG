@@ -1,329 +1,495 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Inmoinnova · Panel de Consultas</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inmoinnova · Panel de Consultas</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body class="bg-gray-100 font-sans p-3 md:p-6">
-  <div class="max-w-7xl mx-auto">
+<div class="max-w-7xl mx-auto">
 
-    <!-- ============ LOGIN ============ -->
-    <div id="auth-box" class="bg-white p-6 rounded-lg shadow-md mb-6 max-w-md mx-auto">
-      <h1 class="text-2xl font-bold text-gray-800 mb-4 text-center">Acceso al Panel</h1>
-      <input type="password" id="broker-key" placeholder="Clave de Broker"
-             class="border p-2 rounded w-full mb-4" />
-      <button onclick="autenticarBroker()"
-              class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full">
-        Entrar
+  <!-- ============ LOGIN ============ -->
+  <div id="auth-box" class="bg-white p-6 rounded-lg shadow-md mb-6 max-w-md mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 mb-4 text-center">Acceso al Panel</h1>
+    <input type="password" id="broker-key" placeholder="Clave de Broker"
+           class="border p-2 rounded w-full mb-4" />
+    <button onclick="autenticarBroker()"
+            class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full">
+      Entrar
+    </button>
+    <p id="auth-status" class="mt-2 text-sm text-red-500 text-center"></p>
+  </div>
+
+  <!-- ============ PANEL ============ -->
+  <div id="consulta-panel" class="hidden">
+    <div class="flex justify-between items-center mb-6 flex-wrap gap-2">
+      <h1 class="text-2xl md:text-3xl font-bold text-gray-800">Inmoinnova · Consulta de Fichas</h1>
+      <button onclick="cerrarSesion()"
+              class="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700">
+        Cerrar Sesión
       </button>
-      <p id="auth-status" class="mt-2 text-sm text-red-500 text-center"></p>
     </div>
 
-    <!-- ============ PANEL ============ -->
-    <div id="consulta-panel" class="hidden">
-      <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-6">Inmoinnova · Consulta de Fichas</h1>
-
-      <!-- Filtros -->
-      <div class="bg-white p-4 md:p-6 rounded-lg shadow-md mb-4 grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Antigüedad</label>
-          <select id="filtro-antiguedad" class="border p-2 rounded w-full">
-            <option value="siempre">Desde siempre</option>
-            <option value="recientes" selected>Más recientes (30 días)</option>
-            <option value="especifica">Fecha específica</option>
-          </select>
-        </div>
-        <div id="fecha-especifica-container" class="hidden">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
-          <input type="date" id="fecha-especifica" class="border p-2 rounded w-full" />
-        </div>
-        <div class="flex items-end">
-          <button onclick="cargarConsultas()"
-                  class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full">
-            Aplicar Filtros
-          </button>
-        </div>
+    <!-- Filtros -->
+    <div class="bg-white p-4 md:p-6 rounded-lg shadow-md mb-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Antigüedad</label>
+        <select id="filtro-antiguedad" class="border p-2 rounded w-full">
+          <option value="siempre">Desde siempre</option>
+          <option value="recientes" selected>Más recientes (30 días)</option>
+          <option value="especifica">Fecha específica</option>
+        </select>
       </div>
-
-      <!-- Toolbar -->
-      <div class="bg-white p-4 rounded-lg shadow-md mb-4 flex flex-wrap gap-2 justify-between items-center">
-        <div class="flex flex-wrap gap-2">
-          <button onclick="copiarTodosLosEnlaces()"
-                  class="bg-indigo-600 text-white px-3 py-2 rounded hover:bg-indigo-700 text-sm">
-            📋 Copiar todos los enlaces WA
-          </button>
-          <button onclick="mostrarListaEnlaces()"
-                  class="bg-purple-600 text-white px-3 py-2 rounded hover:bg-purple-700 text-sm">
-            📄 Ver lista de enlaces
-          </button>
-        </div>
-        <button onclick="exportarPDF()"
-                class="bg-red-600 text-white px-3 py-2 rounded hover:bg-red-700 text-sm">
-          📑 Exportar PDF
+      <div id="fecha-especifica-container" class="hidden">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
+        <input type="date" id="fecha-especifica" class="border p-2 rounded w-full" />
+      </div>
+      <div class="flex items-end">
+        <button onclick="cargarConsultas()"
+                class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 w-full">
+          Aplicar Filtros
         </button>
       </div>
-
-      <!-- Tabla -->
-      <div class="bg-white rounded-lg shadow-md overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200 text-sm">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Título</th>
-              <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Zona</th>
-              <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Precio</th>
-              <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Metros²</th>
-              <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Contacto</th>
-              <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
-              <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">WhatsApp</th>
-            </tr>
-          </thead>
-          <tbody id="tbody-resultados" class="bg-white divide-y divide-gray-200"></tbody>
-        </table>
-      </div>
-      <p id="contador-resultados" class="mt-2 text-sm text-gray-600"></p>
     </div>
 
-    <!-- ============ MODAL LISTA DE ENLACES ============ -->
-    <div id="modal-lista" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-3">
-      <div class="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-screen overflow-y-auto">
-        <div class="sticky top-0 bg-white p-4 border-b flex justify-between items-center">
-          <h2 class="text-lg font-semibold">Lista de enlaces WhatsApp</h2>
-          <button onclick="cerrarModal()" class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
-        </div>
-        <div class="p-4">
-          <button onclick="copiarListaEnlacesModal()"
-                  class="bg-indigo-600 text-white px-3 py-1 rounded text-sm mb-3">
-            📋 Copiar toda la lista
-          </button>
-          <pre id="lista-enlaces-texto"
-               class="whitespace-pre-wrap text-sm bg-gray-50 p-3 rounded border overflow-x-auto"></pre>
-        </div>
+    <!-- Upload -->
+    <div class="bg-white p-4 md:p-6 rounded-lg shadow-md mb-4">
+      <h2 class="text-lg font-semibold mb-2">📁 Subir archivo .txt</h2>
+      <p class="text-sm text-gray-600 mb-3">
+        El archivo se sube a Supabase Storage, el Worker lo procesa en background y luego lo elimina automáticamente.
+      </p>
+      <div class="flex flex-wrap gap-2 items-center">
+        <input type="file" id="file-input" accept=".txt,.gz"
+               class="border p-2 rounded text-sm" />
+        <button onclick="subirArchivo()"
+                class="bg-indigo-600 text-white px-3 py-2 rounded text-sm hover:bg-indigo-700">
+          Subir y Procesar
+        </button>
+        <button onclick="procesarPendientes()"
+                class="bg-yellow-600 text-white px-3 py-2 rounded text-sm hover:bg-yellow-700">
+          Procesar Pendientes en Storage
+        </button>
+      </div>
+      <p id="upload-status" class="mt-2 text-sm text-gray-600 whitespace-pre-line"></p>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="bg-white p-4 rounded-lg shadow-md mb-4 flex flex-wrap gap-2 justify-between items-center">
+      <div class="flex flex-wrap gap-2">
+        <button onclick="copiarTodosLosEnlaces()"
+                class="bg-indigo-600 text-white px-3 py-2 rounded hover:bg-indigo-700 text-sm">
+          📋 Copiar todos los enlaces WA
+        </button>
+        <button onclick="mostrarListaEnlaces()"
+                class="bg-purple-600 text-white px-3 py-2 rounded hover:bg-purple-700 text-sm">
+          📄 Ver lista de enlaces
+        </button>
+      </div>
+      <button onclick="exportarPDF()"
+              class="bg-red-600 text-white px-3 py-2 rounded hover:bg-red-700 text-sm">
+        📑 Exportar PDF
+      </button>
+    </div>
+
+    <!-- Tabla -->
+    <div class="bg-white rounded-lg shadow-md overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 text-sm">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Título</th>
+            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Zona</th>
+            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Precio</th>
+            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Metros²</th>
+            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase hidden md:table-cell">Contacto</th>
+            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
+            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">WhatsApp</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-resultados" class="bg-white divide-y divide-gray-200"></tbody>
+      </table>
+    </div>
+    <p id="contador-resultados" class="mt-2 text-sm text-gray-600"></p>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal-lista" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-3">
+    <div class="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-screen overflow-y-auto">
+      <div class="sticky top-0 bg-white p-4 border-b flex justify-between items-center">
+        <h2 class="text-lg font-semibold">Lista de enlaces WhatsApp</h2>
+        <button onclick="cerrarModal()"
+                class="text-gray-500 hover:text-gray-700 text-2xl leading-none">&times;</button>
+      </div>
+      <div class="p-4">
+        <button onclick="copiarListaEnlacesModal()"
+                class="bg-indigo-600 text-white px-3 py-1 rounded text-sm mb-3">
+          📋 Copiar toda la lista
+        </button>
+        <pre id="lista-enlaces-texto"
+             class="whitespace-pre-wrap text-sm bg-gray-50 p-3 rounded border overflow-x-auto"></pre>
       </div>
     </div>
   </div>
 
-  <script>
-    // ==========================================================
-    // CONFIG
-    // ==========================================================
-    const SUPABASE_URL = "https://yvaizvkonegqhqkqftcn.supabase.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_QG8X26MRcrGwpWoT7B6odw_VaQpr72j";
-    const WORKER_URL = "https://TU-WORKER.TU-SUBDOMINIO.workers.dev"; // <-- CAMBIAR AQUÍ
+</div>
 
-    let supabaseClient = null;
-    let datosActuales = [];
+<script>
+// ==========================================================
+// CONFIG ← CAMBIA SOLO LA URL DEL WORKER
+// ==========================================================
+const SUPABASE_URL = "https://yvaizvkonegqhqkqftcn.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_QG8X26MRcrGwpWoT7B6odw_VaQpr72j";
+const WORKER_URL = "https://TU-WORKER.TU-SUBDOMINIO.workers.dev"; // ← CÁMBIALA
 
-    // ==========================================================
-    // AUTENTICACIÓN
-    // ==========================================================
-    async function autenticarBroker() {
-      const key = document.getElementById('broker-key').value.trim();
-      if (!key) return;
-      try {
-        const resp = await fetch(`${WORKER_URL}/auth/broker`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ key })
-        });
-        const data = await resp.json();
-        if (!resp.ok) {
-          document.getElementById('auth-status').innerText = data.error || 'Clave incorrecta.';
-          return;
-        }
+let supabaseClient = null;
+let brokerToken = null;
+let datosActuales = [];
+
+// ==========================================================
+// AUTENTICACIÓN (Worker primero, fallback directo)
+// ==========================================================
+async function autenticarBroker() {
+  const key = document.getElementById("broker-key").value.trim();
+  const statusEl = document.getElementById("auth-status");
+  statusEl.innerText = "";
+  if (!key) { statusEl.innerText = "Ingresa la clave."; return; }
+
+  try {
+    const resp = await fetch(`${WORKER_URL.replace(/\/$/, "")}/auth/broker`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key }),
+    });
+
+    if (resp.status === 401) {
+      statusEl.innerText = "Clave incorrecta.";
+      return;
+    }
+    if (resp.status === 200) {
+      const data = await resp.json();
+      if (data.ok && data.token) {
+        brokerToken = data.token;
         supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        document.getElementById('auth-box').classList.add('hidden');
-        document.getElementById('consulta-panel').classList.remove('hidden');
-        cargarConsultas();
-      } catch (err) {
-        document.getElementById('auth-status').innerText = 'Error: ' + err.message;
-      }
-    }
-
-    // ==========================================================
-    // CONSULTAS
-    // ==========================================================
-    async function cargarConsultas() {
-      if (!supabaseClient) return;
-      const filtro = document.getElementById('filtro-antiguedad').value;
-      const fechaInput = document.getElementById('fecha-especifica').value;
-
-      let query = supabaseClient
-        .from('market_listings')
-        .select('titulo, zona, precio_usd, metros_2, agencia_o_contacto, fecha_captura, url_fuente, descripcion_ficha')
-        .order('fecha_captura', { ascending: false })
-        .limit(1000);
-
-      if (filtro === 'recientes') {
-        const d = new Date(); d.setDate(d.getDate() - 30);
-        query = query.gte('fecha_captura', d.toISOString());
-      } else if (filtro === 'especifica' && fechaInput) {
-        const ini = new Date(fechaInput + 'T00:00:00Z').toISOString();
-        const fin = new Date(fechaInput + 'T23:59:59Z').toISOString();
-        query = query.gte('fecha_captura', ini).lte('fecha_captura', fin);
-      }
-
-      const { data, error } = await query;
-      if (error) { alert('Error al consultar: ' + error.message); return; }
-      datosActuales = data || [];
-      renderizarTabla(datosActuales);
-    }
-
-    // ==========================================================
-    // HELPERS WHATSAPP
-    // ==========================================================
-    function extraerTelefono(texto) {
-      if (!texto) return null;
-      const m = String(texto).match(/(?:0\d{3}[\-\s]?\d{7}|[+]?58\d{10})/);
-      if (!m) return null;
-      let tel = m[0].replace(/[\s\-]/g, '');
-      if (tel.startsWith('0')) tel = '58' + tel.substring(1);
-      if (tel.startsWith('+')) tel = tel.substring(1);
-      return tel;
-    }
-
-    function generarLinkWhatsApp(item) {
-      const tel = extraerTelefono(item.agencia_o_contacto);
-      if (!tel) return null;
-      const msg = `Hola, me interesa esta ficha: ${item.titulo}\nZona: ${item.zona}\nRef: ${item.url_fuente}`;
-      return `https://wa.me/${tel}?text=${encodeURIComponent(msg)}`;
-    }
-
-    function descripcionBreve(item) {
-      return `${item.titulo} — ${item.zona} — $${Number(item.precio_usd || 0).toLocaleString()}`;
-    }
-
-    // ==========================================================
-    // RENDER TABLA
-    // ==========================================================
-    function renderizarTabla(datos) {
-      const tbody = document.getElementById('tbody-resultados');
-      const contador = document.getElementById('contador-resultados');
-
-      if (datos.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-gray-500">No hay resultados.</td></tr>';
-        contador.innerText = '';
+        entrarAlPanel();
         return;
       }
-
-      tbody.innerHTML = datos.map((item, idx) => {
-        const link = generarLinkWhatsApp(item);
-        const tel = extraerTelefono(item.agencia_o_contacto);
-        return `
-          <tr class="hover:bg-gray-50">
-            <td class="px-3 py-2 text-gray-800">${escapeHtml(item.titulo || '—')}</td>
-            <td class="px-3 py-2 text-gray-800">${escapeHtml(item.zona || '—')}</td>
-            <td class="px-3 py-2 text-gray-800">$${Number(item.precio_usd || 0).toLocaleString()}</td>
-            <td class="px-3 py-2 text-gray-800 hidden md:table-cell">${item.metros_2 || '—'}</td>
-            <td class="px-3 py-2 text-gray-600 hidden md:table-cell">${escapeHtml(tel || item.agencia_o_contacto || '—')}</td>
-            <td class="px-3 py-2 text-gray-500">${new Date(item.fecha_captura).toLocaleDateString()}</td>
-            <td class="px-3 py-2">
-              ${link ? `
-                <div class="flex flex-wrap gap-1">
-                  <a href="${link}" target="_blank" rel="noopener"
-                     class="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700">Abrir</a>
-                  <button onclick="copiarLinkIndex(${idx}, this)"
-                          class="bg-gray-600 text-white px-2 py-1 rounded text-xs hover:bg-gray-700">Copiar</button>
-                </div>
-              ` : '<span class="text-xs text-gray-400">Sin teléfono</span>'}
-            </td>
-          </tr>
-        `;
-      }).join('');
-
-      contador.innerText = `${datos.length} resultado(s).`;
     }
-
-    function escapeHtml(s) {
-      if (s == null) return '';
-      return String(s).replace(/[&<>"']/g, c =>
-        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const errData = await resp.json().catch(() => ({}));
+    if (errData.needs_setup) {
+      statusEl.innerText = "⚠️ Worker sin BROKER_ACCESS_KEY. Usando modo directo…";
+      return autenticarDirecto(key, statusEl);
     }
+    statusEl.innerText = errData.error || "Error de autenticación.";
+  } catch (e) {
+    console.warn("Worker auth falló:", e.message);
+    return autenticarDirecto(key, statusEl);
+  }
+}
 
-    // ==========================================================
-    // COPIAR / LISTA
-    // ==========================================================
-    async function copiarAlPortapapeles(texto, btn) {
-      try {
-        await navigator.clipboard.writeText(texto);
-        if (btn) { const o = btn.innerText; btn.innerText = '✓'; setTimeout(() => btn.innerText = o, 1200); }
-      } catch (e) { alert('No se pudo copiar: ' + e.message); }
-    }
+async function autenticarDirecto(key, statusEl) {
+  try {
+    const client = supabase.createClient(SUPABASE_URL, key);
+    const { error } = await client.from("market_listings").select("id").limit(1);
+    if (error) { statusEl.innerText = "Clave no válida."; return; }
+    supabaseClient = client;
+    brokerToken = null;
+    entrarAlPanel();
+  } catch (e) {
+    statusEl.innerText = "Error de conexión: " + e.message;
+  }
+}
 
-    async function copiarLinkIndex(idx, btn) {
-      const link = generarLinkWhatsApp(datosActuales[idx]);
-      if (link) await copiarAlPortapapeles(link, btn);
-    }
+function entrarAlPanel() {
+  document.getElementById("auth-box").classList.add("hidden");
+  document.getElementById("consulta-panel").classList.remove("hidden");
+  cargarConsultas();
+}
 
-    function construirListaTexto() {
-      return datosActuales.map((item, i) => {
-        const link = generarLinkWhatsApp(item);
-        return `${i + 1}. ${descripcionBreve(item)}${link ? '\n   ' + link : '\n   (sin teléfono)'}`;
-      }).join('\n\n');
-    }
+function cerrarSesion() {
+  supabaseClient = null;
+  brokerToken = null;
+  datosActuales = [];
+  document.getElementById("broker-key").value = "";
+  document.getElementById("auth-status").innerText = "";
+  document.getElementById("consulta-panel").classList.add("hidden");
+  document.getElementById("auth-box").classList.remove("hidden");
+}
 
-    async function copiarTodosLosEnlaces() {
-      if (datosActuales.length === 0) { alert('No hay resultados.'); return; }
-      await copiarAlPortapapeles(construirListaTexto(), null);
-      alert('Lista de enlaces copiada al portapapeles.');
-    }
+// ==========================================================
+// CONSULTAS
+// ==========================================================
+async function cargarConsultas() {
+  if (!supabaseClient) return;
+  const filtro = document.getElementById("filtro-antiguedad").value;
+  const fechaInput = document.getElementById("fecha-especifica").value;
 
-    function mostrarListaEnlaces() {
-      if (datosActuales.length === 0) { alert('No hay resultados.'); return; }
-      document.getElementById('lista-enlaces-texto').innerText = construirListaTexto();
-      document.getElementById('modal-lista').classList.remove('hidden');
-    }
-    function cerrarModal() { document.getElementById('modal-lista').classList.add('hidden'); }
-    async function copiarListaEnlacesModal() {
-      await copiarAlPortapapeles(construirListaTexto(), null);
-      alert('Lista copiada.');
-    }
+  let query = supabaseClient
+    .from("market_listings")
+    .select("titulo, zona, precio_usd, metros_2, agencia_o_contacto, fecha_captura, url_fuente, descripcion_ficha")
+    .order("fecha_captura", { ascending: false })
+    .limit(1000);
 
-    // ==========================================================
-    // PDF
-    // ==========================================================
-    function exportarPDF() {
-      if (datosActuales.length === 0) { alert('No hay datos para exportar.'); return; }
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({ orientation: 'landscape' });
-      doc.setFontSize(16);
-      doc.text('Directorio de Fichas Inmobiliarias', 14, 15);
-      doc.setFontSize(10);
-      doc.text(`Generado: ${new Date().toLocaleString()}`, 14, 22);
+  if (filtro === "recientes") {
+    const d = new Date(); d.setDate(d.getDate() - 30);
+    query = query.gte("fecha_captura", d.toISOString());
+  } else if (filtro === "especifica" && fechaInput) {
+    const ini = new Date(fechaInput + "T00:00:00Z").toISOString();
+    const fin = new Date(fechaInput + "T23:59:59Z").toISOString();
+    query = query.gte("fecha_captura", ini).lte("fecha_captura", fin);
+  }
 
-      const head = [['#', 'Título', 'Zona', 'Precio (USD)', 'm²', 'Contacto', 'Fecha', 'Link WhatsApp']];
-      const body = datosActuales.map((item, i) => [
-        i + 1,
-        item.titulo || '—',
-        item.zona || '—',
-        `$${Number(item.precio_usd || 0).toLocaleString()}`,
-        item.metros_2 || '—',
-        extraerTelefono(item.agencia_o_contacto) || item.agencia_o_contacto || '—',
-        new Date(item.fecha_captura).toLocaleDateString(),
-        generarLinkWhatsApp(item) || '—'
-      ]);
+  const { data, error } = await query;
+  if (error) { alert("Error al consultar: " + error.message); return; }
+  datosActuales = data || [];
+  renderizarTabla(datosActuales);
+}
 
-      doc.autoTable({
-        head, body, startY: 28,
-        styles: { fontSize: 7, cellPadding: 1.5, overflow: 'linebreak' },
-        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
-        alternateRowStyles: { fillColor: [245, 245, 245] },
-        columnStyles: { 0: { cellWidth: 8 }, 7: { cellWidth: 60 } }
+// ==========================================================
+// SUBIR ARCHIVO
+// ==========================================================
+async function subirArchivo() {
+  const statusEl = document.getElementById("upload-status");
+  const fileInput = document.getElementById("file-input");
+  const file = fileInput.files[0];
+  if (!file) { statusEl.innerText = "⚠️ Selecciona un archivo primero."; return; }
+
+  statusEl.innerText = `⏳ Subiendo ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)...`;
+
+  // Modo Worker: sube vía Worker /upload (recomendado)
+  if (brokerToken) {
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const resp = await fetch(`${WORKER_URL.replace(/\/$/, "")}/upload`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${brokerToken}` },
+        body: form,
       });
-
-      doc.save('directorio_inmobiliario.pdf');
+      if (resp.status === 401) {
+        statusEl.innerText = "❌ Sesión expirada. Vuelve a iniciar sesión.";
+        return;
+      }
+      const data = await resp.json();
+      if (data.ok) {
+        statusEl.innerText =
+          `✅ ${data.message}\n` +
+          `📄 Archivo: ${data.path}\n` +
+          `📦 Tamaño: ${data.size_mb} MB\n` +
+          `⏱️ Puede tardar varios minutos. Recarga la tabla en 1-2 min.`;
+        fileInput.value = "";
+      } else {
+        statusEl.innerText = "❌ Error: " + (data.error || "desconocido");
+      }
+    } catch (e) {
+      statusEl.innerText = "❌ Error de red: " + e.message;
     }
+    return;
+  }
 
-    // ==========================================================
-    // EVENTOS
-    // ==========================================================
-    document.getElementById('filtro-antiguedad').addEventListener('change', function () {
-      document.getElementById('fecha-especifica-container').classList.toggle('hidden', this.value !== 'especifica');
+  // Modo directo: sube a Storage con el cliente Supabase (requiere key válida)
+  try {
+    const path = `incoming-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+    const { error } = await supabaseClient.storage
+      .from("incoming-txt")
+      .upload(path, file, { contentType: "text/plain", upsert: true });
+    if (error) {
+      statusEl.innerText = "❌ Error: " + error.message;
+      return;
+    }
+    statusEl.innerText =
+      `✅ Subido a Storage: ${path}\n` +
+      `⏱️ En modo directo el cron lo procesará en ≤5 min.`;
+    fileInput.value = "";
+  } catch (e) {
+    statusEl.innerText = "❌ Error: " + e.message;
+  }
+}
+
+async function procesarPendientes() {
+  const statusEl = document.getElementById("upload-status");
+  if (!brokerToken) {
+    statusEl.innerText =
+      "ℹ️ En modo directo el cron procesa cada 5 min. Para forzarlo ahora, inicia sesión vía Worker (BROKER_ACCESS_KEY).";
+    return;
+  }
+  try {
+    const resp = await fetch(`${WORKER_URL.replace(/\/$/, "")}/process-pending`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${brokerToken}` },
     });
-  </script>
+    const data = await resp.json();
+    statusEl.innerText = data.ok
+      ? "✅ Procesamiento iniciado. Recarga la tabla en 1-2 min."
+      : "❌ " + (data.error || "Error");
+  } catch (e) {
+    statusEl.innerText = "❌ Error de red: " + e.message;
+  }
+}
+
+// ==========================================================
+// HELPERS WHATSAPP
+// ==========================================================
+function extraerTelefono(texto) {
+  if (!texto) return null;
+  const m = String(texto).match(/(?:0\d{3}[\-\s]?\d{7}|[+]?58\d{10})/);
+  if (!m) return null;
+  let tel = m[0].replace(/[\s\-]/g, "");
+  if (tel.startsWith("0")) tel = "58" + tel.substring(1);
+  if (tel.startsWith("+")) tel = tel.substring(1);
+  return tel;
+}
+
+function generarLinkWhatsApp(item) {
+  const tel = extraerTelefono(item.agencia_o_contacto);
+  if (!tel) return null;
+  const msg = `Hola, me interesa esta ficha: ${item.titulo}\nZona: ${item.zona}\nRef: ${item.url_fuente}`;
+  return `https://wa.me/${tel}?text=${encodeURIComponent(msg)}`;
+}
+
+function descripcionBreve(item) {
+  return `${item.titulo} — ${item.zona} — $${Number(item.precio_usd || 0).toLocaleString()}`;
+}
+
+// ==========================================================
+// RENDER TABLA
+// ==========================================================
+function renderizarTabla(datos) {
+  const tbody = document.getElementById("tbody-resultados");
+  const contador = document.getElementById("contador-resultados");
+
+  if (datos.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-gray-500">No hay resultados.</td></tr>';
+    contador.innerText = "";
+    return;
+  }
+
+  tbody.innerHTML = datos.map((item, idx) => {
+    const link = generarLinkWhatsApp(item);
+    const tel = extraerTelefono(item.agencia_o_contacto);
+    return `
+      <tr class="hover:bg-gray-50">
+        <td class="px-3 py-2 text-gray-800">${escapeHtml(item.titulo || "---")}</td>
+        <td class="px-3 py-2 text-gray-800">${escapeHtml(item.zona || "---")}</td>
+        <td class="px-3 py-2 text-gray-800">$${Number(item.precio_usd || 0).toLocaleString()}</td>
+        <td class="px-3 py-2 text-gray-800 hidden md:table-cell">${item.metros_2 || "---"}</td>
+        <td class="px-3 py-2 text-gray-600 hidden md:table-cell">${escapeHtml(tel || item.agencia_o_contacto || "---")}</td>
+        <td class="px-3 py-2 text-gray-500">${new Date(item.fecha_captura).toLocaleDateString()}</td>
+        <td class="px-3 py-2">
+          ${link
+            ? `<div class="flex flex-wrap gap-1">
+                 <a href="${link}" target="_blank" rel="noopener"
+                    class="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700">Abrir</a>
+                 <button onclick="copiarLinkIndex(${idx}, this)"
+                         class="bg-gray-600 text-white px-2 py-1 rounded text-xs hover:bg-gray-700">Copiar</button>
+               </div>`
+            : '<span class="text-xs text-gray-400">Sin teléfono</span>'}
+        </td>
+      </tr>`;
+  }).join("");
+
+  contador.innerText = `${datos.length} resultado(s).`;
+}
+
+function escapeHtml(s) {
+  if (s == null) return "";
+  return String(s).replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+}
+
+// ==========================================================
+// COPIAR / LISTA
+// ==========================================================
+async function copiarAlPortapapeles(texto, btn) {
+  try {
+    await navigator.clipboard.writeText(texto);
+    if (btn) {
+      const o = btn.innerText;
+      btn.innerText = "✓";
+      setTimeout(() => (btn.innerText = o), 1200);
+    }
+  } catch (e) {
+    alert("No se pudo copiar: " + e.message);
+  }
+}
+
+async function copiarLinkIndex(idx, btn) {
+  const link = generarLinkWhatsApp(datosActuales[idx]);
+  if (link) await copiarAlPortapapeles(link, btn);
+}
+
+function construirListaTexto() {
+  return datosActuales.map((item, i) => {
+    const link = generarLinkWhatsApp(item);
+    return `${i + 1}. ${descripcionBreve(item)}${link ? "\n " + link : "\n (sin teléfono)"}`;
+  }).join("\n\n");
+}
+
+async function copiarTodosLosEnlaces() {
+  if (datosActuales.length === 0) { alert("No hay resultados."); return; }
+  await copiarAlPortapapeles(construirListaTexto(), null);
+  alert("Lista de enlaces copiada al portapapeles.");
+}
+
+function mostrarListaEnlaces() {
+  if (datosActuales.length === 0) { alert("No hay resultados."); return; }
+  document.getElementById("lista-enlaces-texto").innerText = construirListaTexto();
+  document.getElementById("modal-lista").classList.remove("hidden");
+}
+
+function cerrarModal() {
+  document.getElementById("modal-lista").classList.add("hidden");
+}
+
+async function copiarListaEnlacesModal() {
+  await copiarAlPortapapeles(construirListaTexto(), null);
+  alert("Lista copiada.");
+}
+
+// ==========================================================
+// PDF
+// ==========================================================
+function exportarPDF() {
+  if (datosActuales.length === 0) { alert("No hay datos para exportar."); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: "landscape" });
+  doc.setFontSize(16);
+  doc.text("Directorio de Fichas Inmobiliarias", 14, 15);
+  doc.setFontSize(10);
+  doc.text(`Generado: ${new Date().toLocaleString()}`, 14, 22);
+  const head = [["#", "Título", "Zona", "Precio (USD)", "m²", "Contacto", "Fecha", "Link WhatsApp"]];
+  const body = datosActuales.map((item, i) => [
+    i + 1,
+    item.titulo || "---",
+    item.zona || "---",
+    `$${Number(item.precio_usd || 0).toLocaleString()}`,
+    item.metros_2 || "---",
+    extraerTelefono(item.agencia_o_contacto) || item.agencia_o_contacto || "---",
+    new Date(item.fecha_captura).toLocaleDateString(),
+    generarLinkWhatsApp(item) || "---",
+  ]);
+  doc.autoTable({
+    head, body, startY: 28,
+    styles: { fontSize: 7, cellPadding: 1.5, overflow: "linebreak" },
+    headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+    alternateRowStyles: { fillColor: [245, 245, 245] },
+    columnStyles: { 0: { cellWidth: 8 }, 7: { cellWidth: 60 } },
+  });
+  doc.save("directorio_inmobiliario.pdf");
+}
+
+// ==========================================================
+// EVENTOS
+// ==========================================================
+document.getElementById("filtro-antiguedad").addEventListener("change", function () {
+  document.getElementById("fecha-especifica-container").classList.toggle(
+    "hidden",
+    this.value !== "especifica"
+  );
+});
+</script>
 </body>
 </html>
